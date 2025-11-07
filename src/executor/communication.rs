@@ -2,7 +2,7 @@
 use flume::{Receiver, Sender};
 
 #[derive(Debug)]
-pub struct TinyConnection<T> {
+pub(crate) struct TinyConnection<T> {
     rx: Receiver<T>,
     tx: Sender<T>
 }

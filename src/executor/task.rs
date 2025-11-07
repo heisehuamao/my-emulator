@@ -1,21 +1,20 @@
+use std::fmt::{Debug, Formatter};
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-#[derive(Debug)]
-pub struct SchedTask {
+pub(crate) struct SchedTask {
     name: String,
+    exe_block: Option<Pin<Box<dyn Future<Output = ()>>>>,
 }
 
 impl SchedTask {
     pub fn new(name: String) -> SchedTask {
-        SchedTask { name }
+        SchedTask { name, exe_block: None }
     }
 }
 
-impl Future for SchedTask {
-    type Output = ();
-
-    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        todo!()
+impl Debug for SchedTask {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Task({})", self.name)
     }
 }
