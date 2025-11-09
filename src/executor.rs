@@ -5,6 +5,7 @@ use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;
 use crate::executor::communication::TinyConnection;
+use crate::executor::sched_msg::{AsyncTaskFnBox, SchedMsg};
 use crate::executor::sched_param::SchedParams;
 use crate::executor::scheduler::Scheduler;
 
@@ -14,14 +15,17 @@ mod task;
 mod taskmng;
 mod runqueue;
 mod sched_param;
+mod sched_wake;
+mod sched_context;
+mod sched_msg;
 
 struct SubThread {
-    conn: TinyConnection<String>,
+    conn: TinyConnection<SchedMsg>,
     handle: thread::JoinHandle<()>,
 }
 
 impl SubThread {
-    fn new(conn: TinyConnection<String>,
+    fn new(conn: TinyConnection<SchedMsg>,
            handle: thread::JoinHandle<()>) -> Self {
         Self { conn, handle }
     }
@@ -29,7 +33,7 @@ impl SubThread {
     fn stop(&self) {
         // send the info first
         loop {
-            match self.conn.try_send(String::from("q")) {
+            match self.conn.try_send(SchedMsg::new(String::from("q"), None)) {
                 Ok(_) => break,
                 Err(_) => thread::sleep(Duration::from_millis(100)),
             }
@@ -73,10 +77,14 @@ impl Executor {
 
     pub fn start_thread(&mut self) -> usize {
         let new_id = self.id.fetch_add(1, Relaxed);
-        let (req_tx, req_rx) = flume::bounded::<String>(10);
-        let (rsp_tx, rsp_rx) = flume::bounded::<String>(10);
+
+        // create communication tunnel
+        let (req_tx, req_rx) = flume::bounded::<SchedMsg>(10);
+        let (rsp_tx, rsp_rx) = flume::bounded::<SchedMsg>(10);
         let exe_end = TinyConnection::new(rsp_rx, req_tx);
         let thread_end = TinyConnection::new(req_rx, rsp_tx);
+
+        // create a new thread
         let handle = thread::spawn(move || {
             println!("thread spawned {}", new_id);
             let params = SchedParams::new(new_id, String::from("tmp"));
@@ -89,7 +97,24 @@ impl Executor {
         
         
         // self.handles.push(handle);
-        _ = exe_end.try_send(String::from("from exe"));
+        // let test_func = Box::new(async |name: String| {
+        //     println!("Hello, {name}");
+        // });
+
+        // fn make_test_func() -> AsyncTaskFnBox {
+        //     Box::new(|name: String| {
+        //         Box::pin(async move {
+        //             println!("Hello, {name}");
+        //         })
+        //     })
+        // }
+        let test_func: AsyncTaskFnBox = Box::new(|name: String| {
+            Box::pin(async move {
+                println!("Hello, {name}");
+            })
+        });
+        let msg = SchedMsg::new(String::from("new_task"), Some(test_func));
+        _ = exe_end.try_send(msg);
         let sun = SubThread::new(exe_end, handle);
         self.subs.push(sun);
         // self.conn = Some(exe_end);
