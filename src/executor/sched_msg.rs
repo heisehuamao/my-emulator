@@ -2,7 +2,8 @@ use std::fmt::{Debug, Formatter};
 use std::pin::Pin;
 
 use std::future::Future;
-
+use std::rc::Rc;
+use crate::executor::scheduler::Scheduler;
 
 pub(crate) type AsyncTaskFnBox = Box<dyn Fn(String) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>;
 pub(crate) struct SchedMsg {

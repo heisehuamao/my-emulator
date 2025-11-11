@@ -1,13 +1,18 @@
+use std::cell::RefCell;
 use std::fmt::{Debug, Formatter};
+use std::rc::Rc;
 use std::sync::atomic::{AtomicUsize};
 use std::sync::atomic::Ordering::Relaxed;
 use std::sync::mpsc;
 use std::thread;
+use std::thread::sleep;
 use std::time::Duration;
 use crate::executor::communication::TinyConnection;
 use crate::executor::sched_msg::{AsyncTaskFnBox, SchedMsg};
 use crate::executor::sched_param::SchedParams;
 use crate::executor::scheduler::Scheduler;
+use crate::executor::sleep_node::SleepRet;
+use crate::executor::thread_data::{clear_scheduler, get_scheduler, set_scheduler};
 
 mod scheduler;
 mod communication;
@@ -18,6 +23,9 @@ mod sched_param;
 mod sched_wake;
 mod sched_context;
 mod sched_msg;
+mod sched_sleep;
+mod sleep_node;
+mod thread_data;
 
 struct SubThread {
     conn: TinyConnection<SchedMsg>,
@@ -51,7 +59,7 @@ impl SubThread {
 pub struct Executor {
     id: AtomicUsize,
     name: String,
-    subs: Vec<SubThread>,
+    subs: RefCell<Vec<SubThread>>,
     // conn: Option<TinyConnection<String>>,
     // handles: Vec<thread::JoinHandle<()>>,
 }
@@ -67,7 +75,7 @@ impl Executor {
         Executor {
             id: AtomicUsize::new(0),
             name: String::from("default"),
-            subs: vec![],
+            subs: RefCell::new(vec![]),
         }
     }
 
@@ -75,7 +83,7 @@ impl Executor {
         self.name.as_str()
     }
 
-    pub fn start_thread(&mut self) -> usize {
+    pub fn start_thread(&self) -> usize {
         let new_id = self.id.fetch_add(1, Relaxed);
 
         // create communication tunnel
@@ -89,52 +97,60 @@ impl Executor {
             println!("thread spawned {}", new_id);
             let params = SchedParams::new(new_id, String::from("tmp"));
 
-            let mut sched = Scheduler::new(new_id.to_string());
+            let sched = Rc::new(Scheduler::new(new_id.to_string()));
             println!("sched is {:?}", sched);
             sched.set_conn(thread_end);
+
+            // set up the sched environment and start running
+            set_scheduler(&sched);
             sched.run(params);
+            clear_scheduler();
         });
         
-        
-        // self.handles.push(handle);
-        // let test_func = Box::new(async |name: String| {
-        //     println!("Hello, {name}");
-        // });
-
-        // fn make_test_func() -> AsyncTaskFnBox {
-        //     Box::new(|name: String| {
-        //         Box::pin(async move {
-        //             println!("Hello, {name}");
-        //         })
-        //     })
-        // }
         let test_func: AsyncTaskFnBox = Box::new(|name: String| {
             Box::pin(async move {
-                println!("Hello, {name}");
+                // Self::sleep(Duration::new(1, 0)).await;
+                println!("Hello, {}", name);
+                Self::sleep(Duration::new(1, 0)).await;
             })
         });
         let msg = SchedMsg::new(String::from("new_task"), Some(test_func));
         _ = exe_end.try_send(msg);
         let sun = SubThread::new(exe_end, handle);
-        self.subs.push(sun);
+        self.subs.borrow_mut().push(sun);
         // self.conn = Some(exe_end);
         new_id
     }
     
     fn sub_stop_all(&self) {
-        for sub in &self.subs {
+        let borrow_subs = self.subs.borrow();
+        let subs = borrow_subs.iter();
+        for sub in subs {
             sub.stop();
         }
     }
     
-    fn sub_join_all(&mut self) {
-        for sub in self.subs.drain(..) {
+    fn sub_join_all(&self) {
+        let mut borrow_subs = self.subs.borrow_mut();
+        for sub in borrow_subs.drain(..) {
             sub.join();
         }
     }
     
-    pub fn exit(&mut self) {
+    pub fn exit(&self) {
         self.sub_stop_all();
         self.sub_join_all();
+    }
+
+    pub fn sleep(dur: Duration) -> SleepRet {
+        let res = get_scheduler();
+        match res {
+            Some(sched) => {
+                sched.sched_sleep(dur)
+            }
+            None => {
+                panic!("Scheduler not running");
+            }
+        }
     }
 }
