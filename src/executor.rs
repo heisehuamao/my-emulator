@@ -11,8 +11,8 @@ use crate::executor::communication::TinyConnection;
 use crate::executor::sched_msg::{AsyncTaskFnBox, SchedMsg};
 use crate::executor::sched_param::SchedParams;
 use crate::executor::scheduler::Scheduler;
-use crate::executor::sleep_node::SleepRet;
-use crate::executor::thread_data::{clear_scheduler, get_scheduler, set_scheduler};
+use crate::executor::sleep_async_node::SleepAsyncNode;
+use crate::executor::runtime::Runtime;
 
 mod scheduler;
 mod communication;
@@ -23,9 +23,9 @@ mod sched_param;
 mod sched_wake;
 mod sched_context;
 mod sched_msg;
-mod sched_sleep;
-mod sleep_node;
-mod thread_data;
+mod sched_sleep_ring;
+mod sleep_async_node;
+mod runtime;
 
 struct SubThread {
     conn: TinyConnection<SchedMsg>,
@@ -102,16 +102,16 @@ impl Executor {
             sched.set_conn(thread_end);
 
             // set up the sched environment and start running
-            set_scheduler(&sched);
+            Runtime::set_scheduler(&sched);
             sched.run(params);
-            clear_scheduler();
+            Runtime::clear_scheduler();
         });
         
         let test_func: AsyncTaskFnBox = Box::new(|name: String| {
             Box::pin(async move {
                 // Self::sleep(Duration::new(1, 0)).await;
                 println!("Hello, {}", name);
-                Self::sleep(Duration::new(1, 0)).await;
+                Runtime::sleep(Duration::new(1, 0)).await;
             })
         });
         let msg = SchedMsg::new(String::from("new_task"), Some(test_func));
@@ -142,15 +142,15 @@ impl Executor {
         self.sub_join_all();
     }
 
-    pub fn sleep(dur: Duration) -> SleepRet {
-        let res = get_scheduler();
-        match res {
-            Some(sched) => {
-                sched.sched_sleep(dur)
-            }
-            None => {
-                panic!("Scheduler not running");
-            }
-        }
-    }
+    // pub fn sleep(dur: Duration) -> SleepRet {
+    //     let res = get_scheduler();
+    //     match res {
+    //         Some(sched) => {
+    //             sched.sched_sleep(dur)
+    //         }
+    //         None => {
+    //             panic!("Scheduler not running");
+    //         }
+    //     }
+    // }
 }

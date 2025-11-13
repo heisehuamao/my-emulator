@@ -7,11 +7,12 @@ use std::time::Duration;
 use crate::executor::communication::TinyConnection;
 use crate::executor::sched_msg::SchedMsg;
 use crate::executor::runqueue::RunQueue;
+use crate::executor::runtime::Runtime;
 use crate::executor::sched_context::SchedContext;
 use crate::executor::sched_param::SchedParams;
-use crate::executor::sched_sleep::SchedSleepRing;
+use crate::executor::sched_sleep_ring::SchedSleepRing;
 use crate::executor::sched_wake::sched_waker_create;
-use crate::executor::sleep_node::SleepRet;
+use crate::executor::sleep_async_node::SleepAsyncNode;
 use crate::executor::task::SchedTask;
 use crate::executor::taskmng::SchedTaskMng;
 
@@ -64,9 +65,13 @@ impl Scheduler {
         }
     }
     
-    pub fn run(&self, param: SchedParams) {
+    pub(crate) fn add_to_sleep_ring(&self, delay_to: u64, task: Rc<SchedTask>) {
+        self.task_sleep_ring.add_task_node(delay_to, task);
+    }
+    
+    pub fn run(self: Rc<Self>, param: SchedParams) {
         // create a context
-        let dummie = Rc::new(SchedContext::new(0, 0));
+        let dummie = Rc::new(SchedContext::new(0, 0, self.clone()));
         let sched_waker = sched_waker_create(dummie);
         let mut ctx = Context::from_waker(&sched_waker);
         
@@ -93,6 +98,7 @@ impl Scheduler {
 
             // schedule all the tasks in the run-queue
             while let Some(task) = self.task_run_queue.take_one_task() {
+                
                 match task.get_task_fut() {
                     Some(task_fut) => {
                         match task_fut.borrow_mut().as_mut().poll(&mut ctx) {
@@ -115,18 +121,24 @@ impl Scheduler {
                     None => {}
                 }
             }
+            
+            let mut sleep_tasks = self.task_sleep_ring.get_tasks();
+            for task in sleep_tasks.drain(..) {
+                self.task_run_queue.push_one_task(task);
+            }
 
             thread::sleep(Duration::from_millis(1000));
         }
     }
     
-    pub(crate) fn sched_sleep(&self, dur: Duration) -> SleepRet {
+    pub(crate) fn sched_sleep(&self, dur_usec: u64) -> SleepAsyncNode {
         // let curr_running_task = match &self.curr_running_task { 
         //     None => panic!("Scheduler has no running task"),
         //     Some(t) => t.clone(),
         // };
         // SleepRet::new(dur, curr_running_task)
-        SleepRet::new(dur)
+        let curr_time_usec = Runtime::get_time_usec();
+        SleepAsyncNode::new(curr_time_usec + dur_usec)
     }
 }
 

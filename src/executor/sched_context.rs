@@ -1,19 +1,43 @@
+use std::ops::Deref;
 use std::rc::Rc;
 use std::task::Waker;
 use crate::executor::sched_wake::SchedWake;
+use crate::executor::scheduler::Scheduler;
+use crate::executor::task::SchedTask;
 
 #[derive(Debug)]
 pub(crate) struct SchedContext {
     task_id: u64,
-    timestamp: u64,
+    curr_time_usec: u64,
+    curr_scheduler: Rc<Scheduler>,
+    curr_task: Option<Rc<SchedTask>>,
 }
 
 
 impl SchedContext {
-    pub(crate) fn new(task_id: u64, timestamp: u64) -> Self {
+    pub(crate) fn new(task_id: u64, timestamp: u64, sched: Rc<Scheduler>) -> Self {
         Self {
             task_id,
-            timestamp,
+            curr_time_usec: timestamp,
+            curr_scheduler: sched,
+            curr_task: None,
+        }
+    }
+
+    pub(crate) fn get_time_usec(&self) -> u64 {
+        self.curr_time_usec
+    }
+    
+    pub(crate) fn get_curr_scheduler(&self) -> &Scheduler {
+        &self.curr_scheduler
+    }
+    
+    pub(crate) fn get_curr_task(&self) -> Option<Rc<SchedTask>> {
+        match &self.curr_task {
+            None => None,
+            Some(t) => {
+                Some(t.clone())
+            }
         }
     }
 }
