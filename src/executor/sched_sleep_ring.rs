@@ -30,6 +30,27 @@ impl SlotVec {
     fn pop_all(&self) -> Vec<SleepRingNode> {
         self.bucket.borrow_mut().drain(..).collect()
     }
+
+    fn pop_before_time(&self, curr_time_usec: u64) -> Vec<SleepRingNode> {
+        let mut bucket = self.bucket.borrow_mut();
+
+        // Partition into "ready" and "remaining"
+        let mut ready = Vec::new();
+        let mut remaining = VecDeque::new();
+
+        while let Some(node) = bucket.pop_front() {
+            if node.delay_to <= curr_time_usec {
+                ready.push(node);
+            } else {
+                remaining.push_back(node);
+            }
+        }
+
+        // Put back the not‑yet‑ready nodes
+        *bucket = remaining;
+
+        ready
+    }
 }
 
 pub(crate) struct SchedSleepRing {
@@ -70,11 +91,11 @@ impl SchedSleepRing {
         slots[insert_idx as usize].push_node(node);
     }
 
-    fn get_nodes_from_slot(&self, exe_idx: u64) -> Vec<SleepRingNode> {
+    fn get_nodes_from_slot(&self, exe_idx: u64, curr_time_usec: u64) -> Vec<SleepRingNode> {
         let real_idx = exe_idx % self.max_slot_size.get();
         let slots = self.slots.borrow();
         if let Some(slot) = slots.get(real_idx as usize) {
-            slot.pop_all()
+            slot.pop_before_time(curr_time_usec)
         } else {
             Vec::new()
         }
@@ -86,10 +107,11 @@ impl SchedSleepRing {
         let curr_slot_idx = curr_time_usec / self.slot_dur.get();
         let exec_slot_idx = self.exec_slot_idx.get();
 
+        // println!("Scheduler::get_tasks() exec_slot_idx: {}, curr_slot_idx: {}", exec_slot_idx, curr_slot_idx);
         let mut result = Vec::new();
         for exe_idx in (exec_slot_idx..curr_slot_idx) {
             // get a task from exe_idx
-            let mut nodes = self.get_nodes_from_slot(exe_idx);
+            let mut nodes = self.get_nodes_from_slot(exe_idx, curr_time_usec);
             let mut tasks: Vec<Rc<SchedTask>> = nodes.drain(..).map(|n| n.task).collect();
             result.append(&mut tasks);
             self.exec_slot_idx.set(exe_idx);

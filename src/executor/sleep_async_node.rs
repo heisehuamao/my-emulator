@@ -27,7 +27,7 @@ impl Future for SleepAsyncNode {
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         // push node to sleep ring and pending
         let sched_ctx = get_sched_context_from_waker(cx.waker());
-        println!("sched ctx is : {:?}", sched_ctx);
+        
         
         // match sched_ctx.get_curr_task() {
         //     None => {
@@ -53,8 +53,10 @@ impl Future for SleepAsyncNode {
                     sched_ctx.get_curr_scheduler().add_to_sleep_ring(self.delayed_to, t);
                 }
             }
+            println!("sched ctx is : {:?}, pending", sched_ctx);
             Poll::Pending
         } else {
+            println!("sched ctx is : {:?}, ready", sched_ctx);
             Poll::Ready(())
         }
     }

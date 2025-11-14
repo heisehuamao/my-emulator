@@ -18,8 +18,8 @@ fn main() {
     }).expect("Error setting Ctrl-C handler");
 
     e.start_thread();
-    e.start_thread();
-    e.start_thread();
+    // e.start_thread();
+    // e.start_thread();
 
     while running.load(Ordering::SeqCst)  {
         // wait

@@ -15,6 +15,7 @@ use crate::executor::sched_wake::sched_waker_create;
 use crate::executor::sleep_async_node::SleepAsyncNode;
 use crate::executor::task::SchedTask;
 use crate::executor::taskmng::SchedTaskMng;
+use crate::executor::tsc_time_clock::TscClock;
 
 pub(crate) struct Scheduler {
     name: String,
@@ -38,7 +39,7 @@ impl Scheduler {
             conn: RefCell::new(None), 
             task_mng: SchedTaskMng::new(), 
             task_run_queue: RunQueue::new(),
-            task_sleep_ring: SchedSleepRing::new(100),
+            task_sleep_ring: SchedSleepRing::new(10000),
             curr_running_task: None,
         }
     }
@@ -71,8 +72,8 @@ impl Scheduler {
     
     pub fn run(self: Rc<Self>, param: SchedParams) {
         // create a context
-        let dummie = Rc::new(SchedContext::new(0, 0, self.clone()));
-        let sched_waker = sched_waker_create(dummie);
+        let sched_ctx = Rc::new(SchedContext::new(0, 0, self.clone()));
+        let sched_waker = sched_waker_create(sched_ctx.clone());
         let mut ctx = Context::from_waker(&sched_waker);
         
         loop {
@@ -98,7 +99,8 @@ impl Scheduler {
 
             // schedule all the tasks in the run-queue
             while let Some(task) = self.task_run_queue.take_one_task() {
-                
+                sched_ctx.set_curr_task(Some(task.clone()));
+                Runtime::set_time_usec(TscClock::rdtsc_usec());
                 match task.get_task_fut() {
                     Some(task_fut) => {
                         match task_fut.borrow_mut().as_mut().poll(&mut ctx) {
@@ -113,6 +115,7 @@ impl Scheduler {
                                     }
                                     Err(_) => {
                                         println!("task future failed to remove: {:?}", task);
+                                        panic!("task future failed to remove: {:?}", task);
                                     }
                                 }
                             }
@@ -120,14 +123,19 @@ impl Scheduler {
                     }
                     None => {}
                 }
+                sched_ctx.set_curr_task(None);
             }
-            
+
+            Runtime::set_time_usec(TscClock::rdtsc_usec());
             let mut sleep_tasks = self.task_sleep_ring.get_tasks();
+            // println!("Scheduler::run() processing sleep nodes: {}", sleep_tasks.len());
             for task in sleep_tasks.drain(..) {
                 self.task_run_queue.push_one_task(task);
             }
 
-            thread::sleep(Duration::from_millis(1000));
+            // let cur_usec = TscClock::rdtsc_usec();
+            // println!("Scheduler::run(): cur usec: {}", cur_usec);
+            thread::sleep(Duration::from_millis(1));
         }
     }
     

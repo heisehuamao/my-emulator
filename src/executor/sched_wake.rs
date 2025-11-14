@@ -7,7 +7,7 @@ pub trait SchedWake {
     fn wake_by_ref(self: &Rc<Self>);
 }
 
-pub fn sched_waker_create<T>(rc: Rc<T>) -> Waker
+pub(crate) fn sched_waker_create<T>(rc: Rc<T>) -> Waker
 where
     T: SchedWake + 'static,
 {

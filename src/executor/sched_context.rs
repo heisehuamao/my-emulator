@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::ops::Deref;
 use std::rc::Rc;
 use std::task::Waker;
@@ -10,7 +11,7 @@ pub(crate) struct SchedContext {
     task_id: u64,
     curr_time_usec: u64,
     curr_scheduler: Rc<Scheduler>,
-    curr_task: Option<Rc<SchedTask>>,
+    curr_task: RefCell<Option<Rc<SchedTask>>>,
 }
 
 
@@ -20,7 +21,7 @@ impl SchedContext {
             task_id,
             curr_time_usec: timestamp,
             curr_scheduler: sched,
-            curr_task: None,
+            curr_task: RefCell::new(None),
         }
     }
 
@@ -33,12 +34,16 @@ impl SchedContext {
     }
     
     pub(crate) fn get_curr_task(&self) -> Option<Rc<SchedTask>> {
-        match &self.curr_task {
+        match self.curr_task.borrow().as_ref() {
             None => None,
             Some(t) => {
                 Some(t.clone())
             }
         }
+    }
+    
+    pub(crate) fn set_curr_task(&self, task: Option<Rc<SchedTask>>) {
+        self.curr_task.replace(task);
     }
 }
 

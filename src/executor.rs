@@ -6,7 +6,7 @@ use std::sync::atomic::Ordering::Relaxed;
 use std::sync::mpsc;
 use std::thread;
 use std::thread::sleep;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use crate::executor::communication::TinyConnection;
 use crate::executor::sched_msg::{AsyncTaskFnBox, SchedMsg};
 use crate::executor::sched_param::SchedParams;
@@ -26,6 +26,7 @@ mod sched_msg;
 mod sched_sleep_ring;
 mod sleep_async_node;
 mod runtime;
+mod tsc_time_clock;
 
 struct SubThread {
     conn: TinyConnection<SchedMsg>,
@@ -109,9 +110,13 @@ impl Executor {
         
         let test_func: AsyncTaskFnBox = Box::new(|name: String| {
             Box::pin(async move {
-                // Self::sleep(Duration::new(1, 0)).await;
-                println!("Hello, {}", name);
-                Runtime::sleep(Duration::new(1, 0)).await;
+                let start = Instant::now();
+                for i in 1..10 {
+                    // Self::sleep(Duration::new(1, 0)).await;
+                    println!("======== Example::async task {} Hello, {}, time: {}", i, name, start.elapsed().as_millis());
+                    Runtime::sleep(Duration::new(1, 0)).await;
+                }
+                println!("======@ example end at {}", start.elapsed().as_millis());
             })
         });
         let msg = SchedMsg::new(String::from("new_task"), Some(test_func));
