@@ -5,15 +5,15 @@ use std::future::Future;
 use std::rc::Rc;
 use crate::executor::scheduler::Scheduler;
 
-pub(crate) type AsyncTaskFnBox = Box<dyn Fn(String) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>;
-pub(crate) struct SchedMsg {
+pub type AsyncTaskFnBox = Box<dyn Fn(String) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>;
+pub struct SchedMsg {
     cmd: String,
     // task_func: Option<Box<dyn Fn(String) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>>,
     task_func: Option<AsyncTaskFnBox>
 }
 
 impl SchedMsg {
-    pub(crate) fn new(cmd: String, task_func: Option<AsyncTaskFnBox>) -> Self {
+    pub fn new(cmd: String, task_func: Option<AsyncTaskFnBox>) -> Self {
         Self { cmd, task_func }
     }
 

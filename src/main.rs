@@ -1,8 +1,10 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use crate::executor::Executor;
+use crate::executor::runtime::Runtime;
+use crate::executor::sched_msg::{AsyncTaskFnBox, SchedMsg};
 
 mod executor;
 
@@ -17,9 +19,23 @@ fn main() {
         r.store(false, Ordering::SeqCst);
     }).expect("Error setting Ctrl-C handler");
 
-    e.start_thread();
+    let thread_id = e.start_thread();
     // e.start_thread();
     // e.start_thread();
+
+    let test_func: AsyncTaskFnBox = Box::new(|name: String| {
+        Box::pin(async move {
+            let start = Instant::now();
+            for i in 1..10 {
+                // Self::sleep(Duration::new(1, 0)).await;
+                println!("======== Example::async task {} Hello, {}, time: {}", i, name, start.elapsed().as_millis());
+                Runtime::sleep(Duration::new(1, 0)).await;
+            }
+            println!("======@ example end at {}", start.elapsed().as_millis());
+        })
+    });
+    let msg = SchedMsg::new(String::from("new_task"), Some(test_func));
+    _ = e.try_send(thread_id, msg);
 
     while running.load(Ordering::SeqCst)  {
         // wait

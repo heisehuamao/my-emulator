@@ -7,6 +7,7 @@ use std::sync::mpsc;
 use std::thread;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
+use log::error;
 use crate::executor::communication::TinyConnection;
 use crate::executor::sched_msg::{AsyncTaskFnBox, SchedMsg};
 use crate::executor::sched_param::SchedParams;
@@ -22,21 +23,22 @@ mod runqueue;
 mod sched_param;
 mod sched_wake;
 mod sched_context;
-mod sched_msg;
+pub mod sched_msg;
 mod sched_sleep_ring;
 mod sleep_async_node;
-mod runtime;
+pub mod runtime;
 mod tsc_time_clock;
 
 struct SubThread {
+    id: usize,
     conn: TinyConnection<SchedMsg>,
     handle: thread::JoinHandle<()>,
 }
 
 impl SubThread {
-    fn new(conn: TinyConnection<SchedMsg>,
+    fn new(id: usize, conn: TinyConnection<SchedMsg>,
            handle: thread::JoinHandle<()>) -> Self {
-        Self { conn, handle }
+        Self { id, conn, handle }
     }
 
     fn stop(&self) {
@@ -55,6 +57,7 @@ impl SubThread {
             Err(e) => {}
         }
     }
+
 }
 
 pub struct Executor {
@@ -108,20 +111,20 @@ impl Executor {
             Runtime::clear_scheduler();
         });
         
-        let test_func: AsyncTaskFnBox = Box::new(|name: String| {
-            Box::pin(async move {
-                let start = Instant::now();
-                for i in 1..10 {
-                    // Self::sleep(Duration::new(1, 0)).await;
-                    println!("======== Example::async task {} Hello, {}, time: {}", i, name, start.elapsed().as_millis());
-                    Runtime::sleep(Duration::new(1, 0)).await;
-                }
-                println!("======@ example end at {}", start.elapsed().as_millis());
-            })
-        });
-        let msg = SchedMsg::new(String::from("new_task"), Some(test_func));
-        _ = exe_end.try_send(msg);
-        let sun = SubThread::new(exe_end, handle);
+        // let test_func: AsyncTaskFnBox = Box::new(|name: String| {
+        //     Box::pin(async move {
+        //         let start = Instant::now();
+        //         for i in 1..10 {
+        //             // Self::sleep(Duration::new(1, 0)).await;
+        //             println!("======== Example::async task {} Hello, {}, time: {}", i, name, start.elapsed().as_millis());
+        //             Runtime::sleep(Duration::new(1, 0)).await;
+        //         }
+        //         println!("======@ example end at {}", start.elapsed().as_millis());
+        //     })
+        // });
+        // let msg = SchedMsg::new(String::from("new_task"), Some(test_func));
+        // _ = exe_end.try_send(msg);
+        let sun = SubThread::new(new_id, exe_end, handle);
         self.subs.borrow_mut().push(sun);
         // self.conn = Some(exe_end);
         new_id
@@ -145,6 +148,18 @@ impl Executor {
     pub fn exit(&self) {
         self.sub_stop_all();
         self.sub_join_all();
+    }
+
+
+    pub fn try_send(&self, sub_id: usize, sched_msg: SchedMsg) -> Result<(), ()> {
+        let subs = self.subs.borrow();
+        
+        for sub in subs.iter() {
+            if sub.id == sub_id {
+                return sub.conn.try_send(sched_msg);
+            }
+        }
+        Err(())
     }
 
     // pub fn sleep(dur: Duration) -> SleepRet {
