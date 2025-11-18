@@ -5,8 +5,12 @@ use std::time::{Duration, Instant};
 use crate::executor::Executor;
 use crate::executor::runtime::Runtime;
 use crate::executor::sched_msg::{AsyncTaskFnBox, SchedMsg};
+use crate::network::async_io_block::AsyncNetIOBlock;
+use crate::network::NetworkStack;
+use crate::network::packet::Packet;
 
 mod executor;
+mod network;
 
 fn main() {
     let running = Arc::new(AtomicBool::new(true));
@@ -23,12 +27,21 @@ fn main() {
     // e.start_thread();
     // e.start_thread();
 
-    let test_func: AsyncTaskFnBox = Box::new(|name: String| {
+    let stk = Arc::new(NetworkStack::new_eth_stack());
+    let cloned_stk = stk.clone();
+
+
+    let test_func: AsyncTaskFnBox = Box::new(move |name: String| {
         Box::pin(async move {
             let start = Instant::now();
+            let pkt1 = Packet::new(100);
+            let pkt2 = Packet::new(100);
+            _ = cloned_stk.rx(pkt1).await;
+            _ = cloned_stk.tx(pkt2).await;
             for i in 1..10 {
                 // Self::sleep(Duration::new(1, 0)).await;
                 println!("======== Example::async task {} Hello, {}, time: {}", i, name, start.elapsed().as_millis());
+
                 Runtime::sleep(Duration::new(1, 0)).await;
             }
             println!("======@ example end at {}", start.elapsed().as_millis());

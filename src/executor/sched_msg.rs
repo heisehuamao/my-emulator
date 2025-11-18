@@ -5,7 +5,7 @@ use std::future::Future;
 use std::rc::Rc;
 use crate::executor::scheduler::Scheduler;
 
-pub type AsyncTaskFnBox = Box<dyn Fn(String) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>;
+pub type AsyncTaskFnBox = Box<dyn FnOnce(String) -> Pin<Box<dyn Future<Output = ()>>> + Send + Sync>;
 pub struct SchedMsg {
     cmd: String,
     // task_func: Option<Box<dyn Fn(String) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>>,
