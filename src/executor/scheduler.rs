@@ -12,7 +12,7 @@ use crate::executor::sched_context::SchedContext;
 use crate::executor::sched_param::SchedParams;
 use crate::executor::sched_sleep_ring::SchedSleepRing;
 use crate::executor::sched_wake::sched_waker_create;
-use crate::executor::sleep_async_node::SleepAsyncNode;
+use crate::executor::sleep_async::SleepAsyncNode;
 use crate::executor::task::SchedTask;
 use crate::executor::taskmng::SchedTaskMng;
 use crate::executor::tsc_time_clock::TscClock;

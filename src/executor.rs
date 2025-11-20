@@ -12,7 +12,7 @@ use crate::executor::communication::TinyConnection;
 use crate::executor::sched_msg::{AsyncTaskFnBox, SchedMsg};
 use crate::executor::sched_param::SchedParams;
 use crate::executor::scheduler::Scheduler;
-use crate::executor::sleep_async_node::SleepAsyncNode;
+use crate::executor::sleep_async::SleepAsyncNode;
 use crate::executor::runtime::Runtime;
 
 mod scheduler;
@@ -25,7 +25,7 @@ mod sched_wake;
 mod sched_context;
 pub mod sched_msg;
 mod sched_sleep_ring;
-mod sleep_async_node;
+mod sleep_async;
 pub mod runtime;
 mod tsc_time_clock;
 

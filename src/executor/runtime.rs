@@ -2,7 +2,7 @@ use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::time::Duration;
 use crate::executor::scheduler::Scheduler;
-use crate::executor::sleep_async_node::SleepAsyncNode;
+use crate::executor::sleep_async::SleepAsyncNode;
 use crate::executor::task::SchedTask;
 
 thread_local! {

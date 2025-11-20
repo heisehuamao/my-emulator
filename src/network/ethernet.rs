@@ -1,0 +1,48 @@
+use std::collections::HashMap;
+use std::sync::Mutex;
+use crate::network::protocol::{NetworkProtocolMng, ProtocolHeaderType};
+
+/// Primary dispatch key: EtherType + optional VLAN ID.
+/// - EtherType: e.g., 0x0800 (IPv4), 0x86DD (IPv6), 0x0806 (ARP)
+/// - VLAN ID: 0..=4095, None if untagged
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct EthKey {
+    pub ethertype: u16,
+    pub vlan: Option<u16>,
+}
+
+/// Optional MAC-based key for L2 learning/forwarding tables
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct MacKey {
+    pub mac: [u8; 6],        // destination or source MAC
+    pub vlan: Option<u16>,   // to keep per-VLAN separation
+}
+
+/// Ethernet resource: handler metadata or next-hop/port
+#[derive(Debug, Clone)]
+pub struct EthEntry {
+    pub description: String, // e.g., "IPv4 handler" or "Bridge to port 3"
+    pub out_iface: Option<String>,
+    pub priority: u8,        // simple precedence
+}
+
+pub struct EthernetProtocol {
+    pub common: NetworkProtocolMng<EthKey, EthEntry>,
+    // Separate MAC table using the same manager type pattern if desired
+    pub mac_table: Mutex<HashMap<MacKey, EthEntry>>,
+
+    // Ethernet-specific knobs
+    pub default_vlan: Option<u16>,
+    pub enable_vlan: bool,
+}
+
+impl EthernetProtocol {
+    pub(crate) fn new() -> EthernetProtocol {
+        EthernetProtocol {
+            common: NetworkProtocolMng::<EthKey, EthEntry>::new(ProtocolHeaderType::Ethernet),
+            mac_table: Mutex::new(Default::default()),
+            default_vlan: None,
+            enable_vlan: false,
+        }
+    }
+}
