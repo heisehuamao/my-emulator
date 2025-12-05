@@ -5,12 +5,15 @@ use crate::network::ethernet::EthKey;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ProtocolHeaderType {
+    None,
     Ethernet,
     ARP,
     IPv4,
     IPv6,
     UDP,
     TCP,
+    ICMPv4,
+    ICMPv6,
 }
 
 impl ProtocolHeaderType {
@@ -22,6 +25,10 @@ impl ProtocolHeaderType {
             ProtocolHeaderType::IPv6     => 0x86DD, // typical EtherType for IPv6
             ProtocolHeaderType::UDP      => 17,     // IP protocol number
             ProtocolHeaderType::TCP      => 6,      // IP protocol number
+            ProtocolHeaderType::ICMPv4    => 0xa4,
+            ProtocolHeaderType::ICMPv6    => 0xa6,
+            ProtocolHeaderType::None    => 0,
+            _ => 0
         }
     }
 }

@@ -8,8 +8,18 @@ pub trait AsyncNetIOModule<Pkt> {
     type TxResult;
     // type OutputErr;
 
-    fn rx(&self, p: Pkt) -> Pin<Box<dyn Future<Output = Self::RxResult>>>;
-    fn tx(&self, p: Pkt) -> Pin<Box<dyn Future<Output = Self::TxResult>>>;
+//     fn rx(self: Arc<Self>, p: Pkt) -> Pin<Box<dyn Future<Output = Self::RxResult>>>;
+//     fn tx(self: Arc<Self>, p: Pkt) -> Pin<Box<dyn Future<Output = Self::TxResult>>>;
+    async fn rx(self: Arc<Self>, p: Pkt) -> Self::RxResult;
+    async fn tx(self: Arc<Self>, p: Pkt) -> Self::TxResult;
+}
+
+pub trait SyncNetIOModule<Pkt> {
+    type RxResult;
+    type TxResult;
+
+    fn rx(&self, p: Pkt) -> Self::RxResult;
+    fn tx(&self, p: Pkt) -> Self::TxResult;
 }
 
 pub trait AsyncSocketModule<Pkt> {

@@ -1,10 +1,10 @@
 use std::pin::Pin;
 use std::rc::Rc;
 use std::sync::Arc;
-use crate::network::async_modules::AsyncNetIOModule;
+use crate::network::module_traits::AsyncNetIOModule;
 use crate::network::packet::NetworkPacket;
 
-pub mod async_modules;
+pub mod module_traits;
 pub mod packet;
 mod socket;
 mod protocol;
@@ -16,6 +16,7 @@ mod ipv6;
 mod icmpv4;
 mod icmpv6;
 mod ethernet;
+mod user_app;
 //
 // pub struct NetworkStack {}
 //

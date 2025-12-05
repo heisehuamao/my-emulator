@@ -1,5 +1,5 @@
 use std::net::Ipv4Addr;
-use crate::network::protocol::NetworkProtocolMng;
+use crate::network::protocol::{NetworkProtocolMng, ProtocolHeaderType};
 
 /// ICMPv4 key: destination IPv4 + type + code
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -19,7 +19,16 @@ pub struct Icmpv4Entry {
 }
 
 
-pub struct Icmpv4Protocol {
+pub struct ICMPv4Protocol {
     pub common: NetworkProtocolMng<Icmpv4Key, Icmpv4Entry>,
     pub default_ttl: u64,
+}
+
+impl ICMPv4Protocol {
+    pub(crate) fn new() -> ICMPv4Protocol {
+        ICMPv4Protocol {
+            common: NetworkProtocolMng::new(ProtocolHeaderType::ICMPv4),
+            default_ttl: 0,
+        }
+    }
 }

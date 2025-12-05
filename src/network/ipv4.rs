@@ -1,6 +1,7 @@
 use std::hash::{Hash, Hasher};
 use std::net::Ipv4Addr;
-use crate::network::protocol::NetworkProtocolMng;
+use crate::network::arp::ArpProtocol;
+use crate::network::protocol::{NetworkProtocolMng, ProtocolHeaderType};
 
 /// CIDR-aware key: network address + prefix length
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -25,9 +26,20 @@ pub struct Ipv4Entry {
 }
 
 /// IPv4 protocol that embeds the shared manager and adds IPv4-specific knobs
-pub struct Ipv4Protocol {
+pub struct IPv4Protocol {
     pub common: NetworkProtocolMng<Ipv4Key, Ipv4Entry>,
     pub ttl_default: u8,
     pub mtu: u16,
     pub allow_fragmentation: bool,
+}
+
+impl IPv4Protocol {
+    pub(crate) fn new() -> IPv4Protocol {
+        IPv4Protocol {
+            common: NetworkProtocolMng::new(ProtocolHeaderType::IPv4),
+            ttl_default: 64,
+            mtu: 1500,
+            allow_fragmentation: false,
+        }
+    }
 }

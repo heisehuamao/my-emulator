@@ -5,7 +5,7 @@ use std::time::{Duration, Instant};
 use crate::executor::Executor;
 use crate::executor::runtime::Runtime;
 use crate::executor::sched_msg::{AsyncTaskFnBox, SchedMsg};
-use crate::network::async_modules::AsyncNetIOModule;
+use crate::network::module_traits::AsyncNetIOModule;
 use crate::network::packet::NetworkPacket;
 use crate::network::stack::NetworkStack;
 
@@ -34,14 +34,15 @@ fn main() {
     let test_func: AsyncTaskFnBox = Box::new(move |name: String| {
         Box::pin(async move {
             let start = Instant::now();
-            let pkt1 = NetworkPacket::new();
-            let pkt2 = NetworkPacket::new();
-            _ = cloned_stk.rx(pkt1).await;
-            _ = cloned_stk.tx(pkt2).await;
+            let mut pkt1 = NetworkPacket::new();
+            let mut pkt2 = NetworkPacket::new();
+            (pkt1, _) = cloned_stk.clone().rx(pkt1).await;
+            (pkt2, _) = cloned_stk.clone().tx(pkt2).await;
             for i in 1..10 {
                 // Self::sleep(Duration::new(1, 0)).await;
                 println!("======== Example::async task {} Hello, {}, time: {}", i, name, start.elapsed().as_millis());
-
+                (pkt1, _) = cloned_stk.clone().rx(pkt1).await;
+                (pkt2, _) = cloned_stk.clone().tx(pkt2).await;
                 Runtime::sleep(Duration::new(1, 0)).await;
             }
             println!("======@ example end at {}", start.elapsed().as_millis());

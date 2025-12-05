@@ -1,6 +1,7 @@
 use std::hash::{Hash, Hasher};
 use std::net::Ipv6Addr;
-use crate::network::protocol::NetworkProtocolMng;
+use crate::network::ipv4::IPv4Protocol;
+use crate::network::protocol::{NetworkProtocolMng, ProtocolHeaderType};
 
 /// CIDR-aware IPv6 key: network address + prefix length
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -25,8 +26,18 @@ pub struct Ipv6Entry {
 }
 
 
-pub struct Ipv6Protocol {
+pub struct IPv6Protocol {
     pub common: NetworkProtocolMng<Ipv6Key, Ipv6Entry>,
     pub hop_limit_default: u8,
     pub mtu: u32,
+}
+
+impl IPv6Protocol {
+    pub(crate) fn new() -> IPv6Protocol {
+        IPv6Protocol {
+            common: NetworkProtocolMng::new(ProtocolHeaderType::IPv6),
+            mtu: 1500,
+            hop_limit_default: 64,
+        }
+    }
 }
