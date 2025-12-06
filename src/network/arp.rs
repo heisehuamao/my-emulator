@@ -1,3 +1,6 @@
+use crate::network::ethernet::EthernetProtocol;
+use crate::network::module_traits::AsyncProtocolModule;
+use crate::network::packet::NetworkPacket;
 use crate::network::protocol::{NetworkProtocolMng, ProtocolHeaderType};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -23,5 +26,20 @@ impl ArpProtocol {
             common: NetworkProtocolMng::new(ProtocolHeaderType::ARP),
             cache_timeout: 0,
         }
+    }
+}
+
+impl AsyncProtocolModule<NetworkPacket> for ArpProtocol {
+    type EncodeResult = (NetworkPacket, Result<(), ()>);
+    type DecodeResult = (NetworkPacket, Result<(), ()>);
+
+    async fn encode(&self, p: NetworkPacket) -> Self::EncodeResult {
+        println!("----- encode arp -----");
+        (p, Ok(()))
+    }
+
+    async fn decode(&self, p: NetworkPacket) -> Self::DecodeResult {
+        println!("----- decode arp -----");
+        (p, Ok(()))
     }
 }

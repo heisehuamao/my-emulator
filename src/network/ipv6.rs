@@ -1,6 +1,8 @@
 use std::hash::{Hash, Hasher};
 use std::net::Ipv6Addr;
 use crate::network::ipv4::IPv4Protocol;
+use crate::network::module_traits::AsyncProtocolModule;
+use crate::network::packet::NetworkPacket;
 use crate::network::protocol::{NetworkProtocolMng, ProtocolHeaderType};
 
 /// CIDR-aware IPv6 key: network address + prefix length
@@ -39,5 +41,20 @@ impl IPv6Protocol {
             mtu: 1500,
             hop_limit_default: 64,
         }
+    }
+}
+
+impl AsyncProtocolModule<NetworkPacket> for IPv6Protocol {
+    type EncodeResult = (NetworkPacket, Result<(), ()>);
+    type DecodeResult = (NetworkPacket, Result<(), ()>);
+
+    async fn encode(&self, p: NetworkPacket) -> Self::EncodeResult {
+        println!("----- encode ipv6 -----");
+        (p, Ok(()))
+    }
+
+    async fn decode(&self, p: NetworkPacket) -> Self::DecodeResult {
+        println!("----- decode ipv6 -----");
+        (p, Ok(()))
     }
 }

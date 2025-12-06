@@ -22,6 +22,13 @@ pub trait SyncNetIOModule<Pkt> {
     fn tx(&self, p: Pkt) -> Self::TxResult;
 }
 
+pub trait AsyncProtocolModule<Pkt> {
+    type EncodeResult;
+    type DecodeResult;
+    async fn encode(&self, p: Pkt) -> Self::EncodeResult;
+    async fn decode(&self, p: Pkt) -> Self::DecodeResult;
+}
+
 pub trait AsyncSocketModule<Pkt> {
     type CreateParam;
     type ListenParam;
@@ -34,21 +41,15 @@ pub trait AsyncSocketModule<Pkt> {
     type RxResult;
     type TxResult;
 
-    fn create(&self, p: Self::CreateParam)
-              -> Pin<Box<dyn Future<Output = Self::CreateResult>>>;
+    async fn create(&self, p: Self::CreateParam) -> Self::CreateResult;
 
-    fn destroy(&self)
-               -> Pin<Box<dyn Future<Output = Self::DestroyResult>>>;
+    async fn destroy(&self) -> Self::DestroyResult;
 
-    fn listen(&self, p: Self::ListenParam)
-              -> Pin<Box<dyn Future<Output = Self::ListenResult>>>;
+    async fn listen(&self, p: Self::ListenParam) -> Self::ListenResult;
 
-    fn connect(&self, p: Self::ConnParam)
-               -> Pin<Box<dyn Future<Output = Self::ConnResult>>>;
+    async fn connect(&self, p: Self::ConnParam) -> Self::ConnResult;
 
-    fn rx(&self, p: Pkt)
-          -> Pin<Box<dyn Future<Output = Self::RxResult>>>;
+    async fn rx(&self, p: Pkt) -> Self::RxResult;
 
-    fn tx(&self, p: Pkt)
-          -> Pin<Box<dyn Future<Output = Self::TxResult>>>;
+    async fn tx(&self, p: Pkt) -> Self::TxResult;
 }

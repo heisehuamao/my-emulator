@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
+use crate::network::module_traits::AsyncProtocolModule;
+use crate::network::packet::NetworkPacket;
 use crate::network::protocol::{NetworkProtocolMng, ProtocolHeaderType};
 
 /// Primary dispatch key: EtherType + optional VLAN ID.
@@ -44,5 +46,20 @@ impl EthernetProtocol {
             default_vlan: None,
             enable_vlan: false,
         }
+    }
+}
+
+impl AsyncProtocolModule<NetworkPacket> for EthernetProtocol {
+    type EncodeResult = (NetworkPacket, Result<(), ()>);
+    type DecodeResult = (NetworkPacket, Result<(), ()>);
+
+    async fn encode(&self, p: NetworkPacket) -> Self::EncodeResult {
+        println!("----- encode ethernet -----");
+        (p, Ok(()))
+    }
+
+    async fn decode(&self, p: NetworkPacket) -> Self::DecodeResult {
+        println!("----- decode ethernet -----");
+        (p, Ok(()))
     }
 }

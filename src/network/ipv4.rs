@@ -1,6 +1,8 @@
 use std::hash::{Hash, Hasher};
 use std::net::Ipv4Addr;
 use crate::network::arp::ArpProtocol;
+use crate::network::module_traits::AsyncProtocolModule;
+use crate::network::packet::NetworkPacket;
 use crate::network::protocol::{NetworkProtocolMng, ProtocolHeaderType};
 
 /// CIDR-aware key: network address + prefix length
@@ -41,5 +43,20 @@ impl IPv4Protocol {
             mtu: 1500,
             allow_fragmentation: false,
         }
+    }
+}
+
+impl AsyncProtocolModule<NetworkPacket> for IPv4Protocol {
+    type EncodeResult = (NetworkPacket, Result<(), ()>);
+    type DecodeResult = (NetworkPacket, Result<(), ()>);
+
+    async fn encode(&self, p: NetworkPacket) -> Self::EncodeResult {
+        println!("----- encode ipv4 -----");
+        (p, Ok(()))
+    }
+
+    async fn decode(&self, p: NetworkPacket) -> Self::DecodeResult {
+        println!("----- decode ipv4 -----");
+        (p, Ok(()))
     }
 }
