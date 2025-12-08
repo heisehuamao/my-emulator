@@ -7,12 +7,12 @@ use crate::network::protocol::{NetworkProtocolMng, ProtocolHeaderType, ProtocolM
 
 /// CIDR-aware key: network address + prefix length
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Ipv4Key {
+pub struct TCPKey {
     pub network: u32, // network address (masked)
     pub prefix: u8,   // 0..=32
 }
 
-impl Hash for Ipv4Key {
+impl Hash for TCPKey {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.network.hash(state);
         self.prefix.hash(state);
@@ -21,23 +21,23 @@ impl Hash for Ipv4Key {
 
 /// IPv4 resource entry: next hop + outbound interface + optional TTL
 #[derive(Debug, Clone)]
-pub struct Ipv4Entry {
+pub struct TCPEntry {
     pub next_hop: Ipv4Addr,
     pub iface: String,
     pub ttl: u64,
 }
 
 /// IPv4 protocol that embeds the shared manager and adds IPv4-specific knobs
-pub(crate) struct IPv4Protocol {
-    pub common: NetworkProtocolMng<Ipv4Key, Ipv4Entry>,
+pub(crate) struct TCPProtocol {
+    pub common: NetworkProtocolMng<TCPKey, TCPEntry>,
     pub ttl_default: u8,
     pub mtu: u16,
     pub allow_fragmentation: bool,
 }
 
-impl IPv4Protocol {
-    pub(crate) fn new() -> IPv4Protocol {
-        IPv4Protocol {
+impl TCPProtocol {
+    pub(crate) fn new() -> TCPProtocol {
+        TCPProtocol {
             common: NetworkProtocolMng::new(ProtocolHeaderType::IPv4),
             ttl_default: 64,
             mtu: 1500,
@@ -46,19 +46,19 @@ impl IPv4Protocol {
     }
 }
 
-impl AsyncProtocolModule<NetworkPacket> for IPv4Protocol {
+impl AsyncProtocolModule<NetworkPacket> for TCPProtocol {
     type EncodeResult = (NetworkPacket, Result<(), ()>);
     type DecodeResult = (NetworkPacket, Result<ProtocolMetaData, ()>);
 
     async fn encode(&self, p: NetworkPacket) -> Self::EncodeResult {
-        println!("----- encode ipv4 -----");
+        println!("----- encode TCP -----");
         (p, Ok(()))
     }
 
     async fn decode(&self, p: NetworkPacket) -> Self::DecodeResult {
-        println!("----- decode ipv4 -----");
+        println!("----- decode TCP -----");
         let mut meta = ProtocolMetaData::new();
-        meta.set_pt(ProtocolHeaderType::UDP);
+        meta.set_pt(ProtocolHeaderType::Socket);
         (p, Ok(meta))
     }
 }

@@ -17,6 +17,8 @@ mod icmpv4;
 mod icmpv6;
 mod ethernet;
 mod user_app;
+mod udp;
+mod tcp;
 //
 // pub struct NetworkStack {}
 //

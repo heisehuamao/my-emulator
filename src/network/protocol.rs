@@ -6,6 +6,7 @@ use crate::network::ethernet::EthKey;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ProtocolHeaderType {
     None,
+    Socket,
     Ethernet,
     ARP,
     IPv4,
@@ -33,6 +34,8 @@ impl ProtocolHeaderType {
     }
 }
 
+
+
 pub(crate) struct NetworkProtocolMng<ProtocolKey, ProtocolRes> {
     header_type: ProtocolHeaderType,
     res_table: Mutex<HashMap<ProtocolKey, ProtocolRes>>,
@@ -50,3 +53,21 @@ impl<ProtocolKey, ProtocolRes> NetworkProtocolMng<ProtocolKey, ProtocolRes> {
 }
 
 pub(crate) trait NetworkProtocol {}
+
+pub(crate) struct ProtocolMetaData {
+    pt: ProtocolHeaderType,
+}
+
+impl ProtocolMetaData {
+    pub(crate) fn new() -> Self {
+        ProtocolMetaData { pt: ProtocolHeaderType::None }
+    }
+
+    pub(crate) fn set_pt(&mut self, p: ProtocolHeaderType) {
+        self.pt = p;
+    }
+
+    pub(crate) fn get_pt(&self) -> ProtocolHeaderType {
+        self.pt
+    }
+}

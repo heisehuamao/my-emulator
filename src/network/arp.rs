@@ -1,7 +1,7 @@
 use crate::network::ethernet::EthernetProtocol;
 use crate::network::module_traits::AsyncProtocolModule;
 use crate::network::packet::NetworkPacket;
-use crate::network::protocol::{NetworkProtocolMng, ProtocolHeaderType};
+use crate::network::protocol::{NetworkProtocolMng, ProtocolHeaderType, ProtocolMetaData};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) struct ArpKey {
@@ -30,16 +30,16 @@ impl ArpProtocol {
 }
 
 impl AsyncProtocolModule<NetworkPacket> for ArpProtocol {
-    type EncodeResult = (NetworkPacket, Result<(), ()>);
-    type DecodeResult = (NetworkPacket, Result<(), ()>);
+    type EncodeResult = (NetworkPacket, Result<ProtocolMetaData, ()>);
+    type DecodeResult = (NetworkPacket, Result<ProtocolMetaData, ()>);
 
     async fn encode(&self, p: NetworkPacket) -> Self::EncodeResult {
         println!("----- encode arp -----");
-        (p, Ok(()))
+        (p, Ok(ProtocolMetaData::new()))
     }
 
     async fn decode(&self, p: NetworkPacket) -> Self::DecodeResult {
         println!("----- decode arp -----");
-        (p, Ok(()))
+        (p, Ok(ProtocolMetaData::new()))
     }
 }

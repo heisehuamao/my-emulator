@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 use crate::network::module_traits::AsyncProtocolModule;
 use crate::network::packet::NetworkPacket;
-use crate::network::protocol::{NetworkProtocolMng, ProtocolHeaderType};
+use crate::network::protocol::{NetworkProtocolMng, ProtocolHeaderType, ProtocolMetaData};
 
 /// Primary dispatch key: EtherType + optional VLAN ID.
 /// - EtherType: e.g., 0x0800 (IPv4), 0x86DD (IPv6), 0x0806 (ARP)
@@ -28,7 +28,7 @@ pub struct EthEntry {
     pub priority: u8,        // simple precedence
 }
 
-pub struct EthernetProtocol {
+pub(crate) struct EthernetProtocol {
     pub common: NetworkProtocolMng<EthKey, EthEntry>,
     // Separate MAC table using the same manager type pattern if desired
     pub mac_table: Mutex<HashMap<MacKey, EthEntry>>,
@@ -51,7 +51,7 @@ impl EthernetProtocol {
 
 impl AsyncProtocolModule<NetworkPacket> for EthernetProtocol {
     type EncodeResult = (NetworkPacket, Result<(), ()>);
-    type DecodeResult = (NetworkPacket, Result<(), ()>);
+    type DecodeResult = (NetworkPacket, Result<ProtocolMetaData, ()>);
 
     async fn encode(&self, p: NetworkPacket) -> Self::EncodeResult {
         println!("----- encode ethernet -----");
@@ -60,6 +60,8 @@ impl AsyncProtocolModule<NetworkPacket> for EthernetProtocol {
 
     async fn decode(&self, p: NetworkPacket) -> Self::DecodeResult {
         println!("----- decode ethernet -----");
-        (p, Ok(()))
+        let mut meta = ProtocolMetaData::new();
+        meta.set_pt(ProtocolHeaderType::IPv4);
+        (p, Ok(meta))
     }
 }
