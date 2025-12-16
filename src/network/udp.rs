@@ -61,4 +61,16 @@ impl AsyncProtocolModule<NetworkPacket> for UDPProtocol {
         meta.set_pt(ProtocolHeaderType::Socket);
         (p, Ok(meta))
     }
+
+    fn sync_encode(&self, p: NetworkPacket) -> Self::EncodeResult {
+        println!("----- encode UDP -----");
+        (p, Ok(()))
+    }
+
+    fn sync_decode(&self, p: NetworkPacket) -> Self::DecodeResult {
+        println!("----- decode UDP -----");
+        let mut meta = ProtocolMetaData::new();
+        meta.set_pt(ProtocolHeaderType::Socket);
+        (p, Ok(meta))
+    }
 }

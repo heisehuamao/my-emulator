@@ -59,4 +59,16 @@ impl AsyncProtocolModule<NetworkPacket> for IPv6Protocol {
         meta.set_pt(ProtocolHeaderType::UDP);
         (p, Ok(meta))
     }
+
+    fn sync_encode(&self, p: NetworkPacket) -> Self::EncodeResult {
+        println!("----- encode ipv6 -----");
+        (p, Ok(()))
+    }
+
+    fn sync_decode(&self, p: NetworkPacket) -> Self::DecodeResult {
+        println!("----- decode ipv6 -----");
+        let mut meta = ProtocolMetaData::new();
+        meta.set_pt(ProtocolHeaderType::UDP);
+        (p, Ok(meta))
+    }
 }

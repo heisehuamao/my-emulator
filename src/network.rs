@@ -19,6 +19,7 @@ mod ethernet;
 mod user_app;
 mod udp;
 mod tcp;
+mod subres;
 //
 // pub struct NetworkStack {}
 //

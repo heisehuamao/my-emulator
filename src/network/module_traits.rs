@@ -27,6 +27,9 @@ pub trait AsyncProtocolModule<Pkt> {
     type DecodeResult;
     async fn encode(&self, p: Pkt) -> Self::EncodeResult;
     async fn decode(&self, p: Pkt) -> Self::DecodeResult;
+
+    fn sync_encode(&self, p: Pkt) -> Self::EncodeResult;
+    fn sync_decode(&self, p: Pkt) -> Self::DecodeResult;
 }
 
 pub trait AsyncSocketModule<Pkt> {

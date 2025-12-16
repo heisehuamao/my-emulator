@@ -103,7 +103,7 @@ impl AsyncNetIOModule<NetworkPacket> for NetworkStack
         match self.stack_type {
             ProtocolHeaderType::Ethernet => {
                 // L2
-                (p, res) = self.protocol_eth.clone().decode(p).await;
+                (p, res) = self.protocol_eth.sync_decode(p);
                 let l3_meta = match res {
                     Ok(meta) => meta,
                     _ => return (p, Err(())),
@@ -111,9 +111,9 @@ impl AsyncNetIOModule<NetworkPacket> for NetworkStack
                 
                 // L3
                 (p, res) = match l3_meta.get_pt() {
-                    ProtocolHeaderType::ARP => self.protocol_arp.clone().decode(p).await,
-                    ProtocolHeaderType::IPv4 => self.protocol_ipv4.clone().decode(p).await,
-                    ProtocolHeaderType::IPv6 => self.protocol_ipv6.clone().decode(p).await,
+                    ProtocolHeaderType::ARP => self.protocol_arp.sync_decode(p),
+                    ProtocolHeaderType::IPv4 => self.protocol_ipv4.sync_decode(p),
+                    ProtocolHeaderType::IPv6 => self.protocol_ipv6.sync_decode(p),
                     _ => return (p, Err(())),
                 };
                 let l4_meta = match res {
@@ -123,8 +123,8 @@ impl AsyncNetIOModule<NetworkPacket> for NetworkStack
                 
                 // l4
                 (p, res) = match l4_meta.get_pt() {
-                    ProtocolHeaderType::UDP => self.protocol_udp.clone().decode(p).await,
-                    ProtocolHeaderType::TCP => self.protocol_tcp.clone().decode(p).await,
+                    ProtocolHeaderType::UDP => self.protocol_udp.sync_decode(p),
+                    ProtocolHeaderType::TCP => self.protocol_tcp.sync_decode(p),
                     _ => return (p, Err(())),
                 };
                 let app_meta = match res {
@@ -142,10 +142,10 @@ impl AsyncNetIOModule<NetworkPacket> for NetworkStack
     async fn tx(self: Arc<Self>, p: NetworkPacket) -> Self::TxResult {
         println!("!!!!!!!!!stack tx test. {:?}", p);
         let (p, res) = self.socket_layer.clone().tx(p).await;
-        let (p, res) = self.protocol_eth.clone().encode(p).await;
-        let (p, res) = self.protocol_arp.clone().encode(p).await;
-        let (p, res) = self.protocol_ipv4.clone().encode(p).await;
-        let (p, res) = self.protocol_ipv6.clone().encode(p).await;
+        let (p, res) = self.protocol_eth.sync_encode(p);
+        let (p, res) = self.protocol_arp.sync_encode(p);
+        let (p, res) = self.protocol_ipv4.sync_encode(p);
+        let (p, res) = self.protocol_ipv6.sync_encode(p);
         let (p, res) = self.driver_layer.clone().tx(p).await;
         (p, Ok(()))
     }

@@ -1,9 +1,10 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::sync::Mutex;
+use std::hash::Hash;
+use std::sync::{Mutex, RwLock, RwLockWriteGuard};
 use crate::network::ethernet::EthKey;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ProtocolHeaderType {
     None,
     Socket,
@@ -33,22 +34,40 @@ impl ProtocolHeaderType {
         }
     }
 }
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProtocolResValue {
+    pub t: ProtocolHeaderType,   // 0..=32
+    pub v: Option<Vec<u8>>,
+}
 
-
+impl Hash for ProtocolResValue {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.t.code().hash(state);
+        match &self.v {
+            Some(v) => {v.hash(state);},
+            None => {}
+        }
+    }
+}
 
 pub(crate) struct NetworkProtocolMng<ProtocolKey, ProtocolRes> {
     header_type: ProtocolHeaderType,
-    res_table: Mutex<HashMap<ProtocolKey, ProtocolRes>>,
-    res_map: Mutex<HashMap<u64, ProtocolRes>>,
+    res_table: RwLock<HashMap<ProtocolKey, ProtocolRes>>,
+    res_map: RwLock<HashMap<u64, ProtocolRes>>,
 }
 
 impl<ProtocolKey, ProtocolRes> NetworkProtocolMng<ProtocolKey, ProtocolRes> {
     pub(crate) fn new(t: ProtocolHeaderType) -> Self {
         NetworkProtocolMng {
             header_type: t,
-            res_table: Mutex::new(HashMap::new()),
-            res_map: Mutex::new(HashMap::new()),
+            res_table: RwLock::new(HashMap::new()),
+            res_map: RwLock::new(HashMap::new()),
         }
+    }
+
+    pub(crate) fn res_write_borrow(&self) -> RwLockWriteGuard<HashMap<ProtocolKey, ProtocolRes>> {
+        let res = self.res_table.write();
+        res.unwrap()
     }
 }
 

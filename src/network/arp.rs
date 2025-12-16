@@ -42,4 +42,14 @@ impl AsyncProtocolModule<NetworkPacket> for ArpProtocol {
         println!("----- decode arp -----");
         (p, Ok(ProtocolMetaData::new()))
     }
+
+    fn sync_encode(&self, p: NetworkPacket) -> Self::EncodeResult {
+        println!("----- encode arp -----");
+        (p, Ok(ProtocolMetaData::new()))
+    }
+
+    fn sync_decode(&self, p: NetworkPacket) -> Self::DecodeResult {
+        println!("----- decode arp -----");
+        (p, Ok(ProtocolMetaData::new()))
+    }
 }

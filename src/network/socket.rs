@@ -1,6 +1,6 @@
 use std::pin::Pin;
 use std::sync::Arc;
-use crate::network::ipv4::{Ipv4Entry, Ipv4Key};
+use crate::network::ipv4::{IPv4Entry, IPv4Key};
 use crate::network::module_traits::AsyncNetIOModule;
 use crate::network::packet::NetworkPacket;
 use crate::network::protocol::{NetworkProtocolMng, ProtocolHeaderType};
