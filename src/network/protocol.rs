@@ -40,6 +40,15 @@ pub struct ProtocolResValue {
     pub v: Option<Vec<u8>>,
 }
 
+impl Default for ProtocolResValue {
+    fn default() -> Self {
+        ProtocolResValue {
+            t: ProtocolHeaderType::None,
+            v: None
+        }
+    }
+}
+
 impl Hash for ProtocolResValue {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.t.code().hash(state);

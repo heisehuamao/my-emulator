@@ -1,7 +1,8 @@
+use std::any::Any;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::hash::Hash;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use crate::network::module_traits::AsyncProtocolModule;
 use crate::network::packet::NetworkPacket;
 use crate::network::protocol::{NetworkProtocolMng, ProtocolHeaderType, ProtocolMetaData};
@@ -46,19 +47,17 @@ impl Hash for EthKey {
 pub(crate) struct EthEntry {
     mac: MacAddr,        // destination or source MAC
     vlan: Option<u16>,   // to keep per-VLAN separation
-//     pub description: String, // e.g., "IPv4 handler" or "Bridge to port 3"
-//     pub out_iface: Option<String>,
-//     pub priority: u8,        // simple precedence
+    sub: Option<Arc<dyn Any + Send + Sync>>,
 }
 
 impl EthEntry {
-    pub fn new(mac: MacAddr, vlan: Option<u16>) -> EthEntry {
-        EthEntry { mac, vlan }
+    pub fn new(mac: MacAddr, vlan: Option<u16>, sub: Option<Arc<dyn Any + Send + Sync>>) -> EthEntry {
+        EthEntry { mac, vlan, sub: None }
     }
 }
 
 pub(crate) struct EthernetProtocol {
-    pub common: NetworkProtocolMng<EthKey, EthEntry>,
+    pub common: NetworkProtocolMng<EthKey, Arc<EthEntry>>,
     // Separate MAC table using the same manager type pattern if desired
     // pub mac_table: Mutex<HashMap<MacKey, EthEntry>>,
 
@@ -70,16 +69,16 @@ pub(crate) struct EthernetProtocol {
 impl EthernetProtocol {
     pub(crate) fn new() -> EthernetProtocol {
         EthernetProtocol {
-            common: NetworkProtocolMng::<EthKey, EthEntry>::new(ProtocolHeaderType::Ethernet),
+            common: NetworkProtocolMng::<EthKey, Arc<EthEntry>>::new(ProtocolHeaderType::Ethernet),
             // mac_table: Mutex::new(Default::default()),
             default_vlan: None,
             enable_vlan: false,
         }
     }
 
-    pub(crate) fn add_mac(&mut self, mac: MacAddr) -> Result<(), ()> {
+    pub(crate) fn add_mac(&self, mac: MacAddr, sub: Option<Arc<dyn Any + Send + Sync>>) -> Result<(), ()> {
         let ky = EthKey::new(mac.clone());
-        let ent = EthEntry::new(mac.clone(), None);
+        let mut ent = Arc::new(EthEntry::new(mac.clone(), None, sub));
         let mut ret = Err(());
         {
             let mut w = self.common.res_write_borrow();
@@ -92,6 +91,10 @@ impl EthernetProtocol {
             }
         }
         ret
+    }
+    
+    pub(crate) fn search_mac(&self, mac: &EthKey) -> Result<Arc<EthEntry>, ()> {
+        Err(())
     }
 }
 

@@ -1,10 +1,10 @@
 use std::any::Any;
-use std::pin::Pin;
 use std::sync::Arc;
+use crate::network::ipv4::IPv4Addr;
 use crate::network::arp::ArpProtocol;
 use crate::network::module_traits::{AsyncNetIOModule, AsyncProtocolModule};
 use crate::network::driver::NetworkDriver;
-use crate::network::ethernet::EthernetProtocol;
+use crate::network::ethernet::{EthEntry, EthKey, EthernetProtocol, MacAddr};
 use crate::network::icmpv4::ICMPv4Protocol;
 use crate::network::icmpv6::ICMPv6Protocol;
 use crate::network::ipv4::IPv4Protocol;
@@ -14,42 +14,7 @@ use crate::network::protocol::{ProtocolHeaderType, ProtocolMetaData};
 use crate::network::socket::NetworkSocket;
 use crate::network::tcp::TCPProtocol;
 use crate::network::udp::UDPProtocol;
-/*
-multiple levels of IPv4
-          +-------------------+
-          |     Ethernet      |
-          +---------+---------+
-                    |
-                    | EtherType: 0x0800 (IPv4)
-                    v
-          +-------------------+
-          |       IPv4        |
-          |  (Outer Header)   |
-          | Protocol: 4 (IPv4)|
-          +---------+---------+
-                    |
-                    |
-                    v
-          +-------------------+
-          |       IPv4        |
-          |  (Inner Header)   |
-          | Protocol: 1 (ICMPv4) OR 4 (IPv4) OR 6 (TCP) OR 17 (UDP)
-          +---------+---------+
-          /    /    \    \
-         /    /      \    \
-        v    v        v    v
- +-------+ +-------+ +-------+ +-------+
- | ICMPv4| |  IPv4 | |  TCP  | |  UDP  |
- |       | | (Inner| |       | |       |
- |       | | most) | |       | |       |
- +-------+ +-------+ +-------+ +-------+
-               |        |         |
-               |        |         |
-               v        v         v
-             +-------+ +-------+ +-------+
-             | ICMPv4| | HTTP  | | DNS   |
-             +-------+ +-------+ +-------+
- */
+
 pub struct NetworkStack {
     stack_type: ProtocolHeaderType,
     socket_layer: Arc<NetworkSocket>,
@@ -81,9 +46,48 @@ impl NetworkStack {
         }
     }
 
-    // pub fn recv(&self, p: Packet) -> Pin<Box<dyn Future<Output=Result<(), ()>>>> {
-    //     self.rx(p)
-    // }
+    pub fn add_mac(&self, mac: MacAddr) -> Result<(), ()> {
+        self.protocol_eth.add_mac(mac, None)
+    }
+
+    fn add_ipv4_on_ethernet(&self, ip: IPv4Addr, sub: Option<Arc<dyn Any + Send + Sync>>) -> Result<(), ()> {
+        let Some(sub_res) = sub else {
+            return Err(());
+        };
+
+        if let Ok(eth_res) = sub_res.downcast::<EthEntry>() {
+            return self.protocol_ipv4.add_ipv4(ip, Some(eth_res));
+        } else {
+            return Err(());
+        }
+
+        Ok(())
+    }
+
+    fn add_ipv4_internal(&self, ip: IPv4Addr, sub: Option<Arc<dyn Any + Send + Sync>>) -> Result<(), ()> {
+        match self.stack_type {
+            ProtocolHeaderType::Ethernet => self.add_ipv4_on_ethernet(ip, sub),
+            _ => Err(())
+        }
+    }
+
+    pub fn add_ipv4<'a>(&self, ip: IPv4Addr, sub_addr: Option<&'a(dyn Any + Send + Sync)>) -> Result<(), ()> {
+        let Some(sub_addr_val) = sub_addr else {
+            return Err(());
+        };
+
+        if let Some(eth) = sub_addr_val.downcast_ref::<EthKey>(){
+            // search mac
+            let search_res = self.protocol_eth.search_mac(eth);
+            let ret = match search_res { 
+                Ok(mac_res) => self.protocol_ipv4.add_ipv4(ip, Some(mac_res)),
+                Err(_) => Err(())
+            };
+            ret
+        } else {
+            Err(())
+        }
+    }
 }
 
 impl AsyncNetIOModule<NetworkPacket> for NetworkStack

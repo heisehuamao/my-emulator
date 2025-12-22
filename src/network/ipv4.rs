@@ -42,25 +42,23 @@ pub(crate) struct IPv4Entry {
     addr: IPv4Addr, // network address (masked)
     mask: u8,
     mtu: u16,
-    sub: Arc<SubInfo>,
-    // pub iface: String,
-    // pub ttl: u64,
+    sub: Option<Arc<dyn Any + Send + Sync>>,
 }
 
 impl IPv4Entry {
-    pub fn new(addr: IPv4Addr, mtu: u16) -> Self {
+    pub fn new(addr: IPv4Addr, mtu: u16, sub: Option<Arc<dyn Any + Send + Sync>>) -> Self {
         IPv4Entry {
             addr,
             mask: 0,
             mtu,
-            sub: Arc::new(SubInfo::default()),
+            sub,
         }
     }
 }
 
 /// IPv4 protocol that embeds the shared manager and adds IPv4-specific knobs
 pub(crate) struct IPv4Protocol {
-    pub common: NetworkProtocolMng<IPv4Key, IPv4Entry>,
+    pub common: NetworkProtocolMng<IPv4Key, Arc<IPv4Entry>>,
     pub ttl_default: u8,
     pub mtu: u16,
     pub allow_fragmentation: bool,
@@ -76,9 +74,9 @@ impl IPv4Protocol {
         }
     }
 
-    pub(crate) fn add_ipv4(&mut self, addr: IPv4Addr, sub: ProtocolResValue,) -> Result<(), ()> {
-        let key = IPv4Key::new(addr.clone(), sub.clone());
-        let ent = IPv4Entry::new(addr.clone(), 1000);
+    pub(crate) fn add_ipv4(&self, addr: IPv4Addr, sub: Option<Arc<dyn Any + Send + Sync>>,) -> Result<(), ()> {
+        let key = IPv4Key::new(addr.clone(), ProtocolResValue::default());
+        let ent = Arc::new(IPv4Entry::new(addr.clone(), 1000, sub));
         let mut ret = Err(());
         {
             let mut w = self.common.res_write_borrow();
