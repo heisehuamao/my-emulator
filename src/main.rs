@@ -53,15 +53,22 @@ fn main() {
             let mac = MacAddr::from_str("00-10-00-00-aa-bb").unwrap();
             let mac_res = cloned_stk.add_mac(&mac);
             if let Ok(_) = mac_res {
-                let ip = IPv4Addr::from_str("1.1.1.1").unwrap();
-                let ip_res = cloned_stk.add_ipv4(ip, Some(&mac));
+                println!("add mac {} ok", mac);
+                let ip1 = IPv4Addr::from_str("1.1.1.1").unwrap();
+                let ip2 = IPv4Addr::from_str("1.1.1.2").unwrap();
+                let ip_res = cloned_stk.add_ipv4(&ip1, Some(&mac));
                 if let Ok(_) = ip_res {
-                    println!("adding IPv4 ok")
+                    println!("adding {} ok", ip1)
                 } else {
-                    println!("adding IPv4 failed")
+                    println!("adding {} failed", ip1)
+                }
+
+                match cloned_stk.add_ipv4(&ip2, Some(&mac)) {
+                    Ok(_) => println!("adding {} ok", ip2),
+                    Err(_) => println!("adding {} failed", ip2)
                 }
             } else {
-                println!("adding MAC failed")
+                println!("adding {} failed", mac)
             }
 
             println!("======@ example end at {}", start.elapsed().as_millis());

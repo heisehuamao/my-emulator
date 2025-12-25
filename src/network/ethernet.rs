@@ -130,7 +130,7 @@ impl EthernetProtocol {
     
     pub(crate) fn search_mac(&self, mac: &MacAddr) -> Result<Arc<EthEntry>, ()> {
         let key = EthKey::new(&mac);
-        let mut r = self.common.res_read_borrow();
+        let r = self.common.res_read_borrow();
         match r.get(&key).map(Arc::clone) {
             Some(ent) => Ok(ent),
             None => {

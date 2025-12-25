@@ -50,7 +50,7 @@ impl NetworkStack {
         self.protocol_eth.add_mac(mac, None)
     }
 
-    fn add_ipv4_on_ethernet(&self, ip: IPv4Addr, sub: Option<Arc<dyn Any + Send + Sync>>) -> Result<(), ()> {
+    fn add_ipv4_on_ethernet(&self, ip: &IPv4Addr, sub: Option<Arc<dyn Any + Send + Sync>>) -> Result<(), ()> {
         let Some(sub_res) = sub else {
             return Err(());
         };
@@ -64,14 +64,14 @@ impl NetworkStack {
         Ok(())
     }
 
-    fn add_ipv4_internal(&self, ip: IPv4Addr, sub: Option<Arc<dyn Any + Send + Sync>>) -> Result<(), ()> {
+    fn add_ipv4_internal(&self, ip: &IPv4Addr, sub: Option<Arc<dyn Any + Send + Sync>>) -> Result<(), ()> {
         match self.stack_type {
             ProtocolHeaderType::Ethernet => self.add_ipv4_on_ethernet(ip, sub),
             _ => Err(())
         }
     }
 
-    pub fn add_ipv4<'a>(&self, ip: IPv4Addr, sub_addr: Option<&'a(dyn Any + Send + Sync)>) -> Result<(), ()> {
+    pub fn add_ipv4<'a>(&self, ip: &IPv4Addr, sub_addr: Option<&'a(dyn Any + Send + Sync)>) -> Result<(), ()> {
         let Some(sub_addr_val) = sub_addr else {
             println!("No sub addr for ipv4");
             return Err(());

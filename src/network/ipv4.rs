@@ -102,7 +102,7 @@ impl IPv4Protocol {
         }
     }
 
-    pub(crate) fn add_ipv4(&self, addr: IPv4Addr, sub: Option<Arc<dyn Any + Send + Sync>>,) -> Result<(), ()> {
+    pub(crate) fn add_ipv4(&self, addr: &IPv4Addr, sub: Option<Arc<dyn Any + Send + Sync>>,) -> Result<(), ()> {
         let key = IPv4Key::new(addr.clone(), ProtocolResValue::default());
         let ent = Arc::new(IPv4Entry::new(addr.clone(), 1000, sub));
         let mut ret = Err(());
