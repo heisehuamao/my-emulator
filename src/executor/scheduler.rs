@@ -94,6 +94,8 @@ impl Scheduler {
                             self.task_run_queue.push_one_task(new_sched_task);
                         }
                     }
+                } else if val.get_cmd() == "add mac" {
+                    
                 }
             }
 

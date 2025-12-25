@@ -1,7 +1,9 @@
 use std::any::Any;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
+use std::fmt::{Display, Formatter};
 use std::hash::Hash;
+use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use crate::network::module_traits::AsyncProtocolModule;
 use crate::network::packet::NetworkPacket;
@@ -12,6 +14,39 @@ use crate::network::protocol::{NetworkProtocolMng, ProtocolHeaderType, ProtocolM
 pub struct MacAddr {
     pub mac: [u8; 6],
 }
+
+// Implement FromStr for safe parsing
+impl FromStr for MacAddr {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let parts: Vec<&str> = s.split(|c| c == ':' || c == '-').collect();
+        if parts.len() != 6 {
+            return Err("Invalid MAC address format".into());
+        }
+
+        let mut mac = [0u8; 6];
+        for (i, part) in parts.iter().enumerate() {
+            mac[i] = u8::from_str_radix(part, 16)
+                .map_err(|_| format!("Invalid hex value: {}", part))?;
+        }
+
+        Ok(MacAddr { mac })
+    }
+}
+
+// Implement Display for formatting back to string
+impl Display for MacAddr {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}",
+            self.mac[0], self.mac[1], self.mac[2],
+            self.mac[3], self.mac[4], self.mac[5]
+        )
+    }
+}
+
 
 /// Primary dispatch key: EtherType + optional VLAN ID.
 /// - EtherType: e.g., 0x0800 (IPv4), 0x86DD (IPv6), 0x0806 (ARP)
@@ -24,8 +59,8 @@ pub struct EthKey {
 }
 
 impl EthKey {
-    pub fn new(key: MacAddr) -> EthKey {
-        EthKey { key }
+    pub fn new(key_ref: &MacAddr) -> EthKey {
+        EthKey { key: key_ref.clone() }
     }
 }
 
@@ -76,9 +111,9 @@ impl EthernetProtocol {
         }
     }
 
-    pub(crate) fn add_mac(&self, mac: MacAddr, sub: Option<Arc<dyn Any + Send + Sync>>) -> Result<(), ()> {
-        let ky = EthKey::new(mac.clone());
-        let mut ent = Arc::new(EthEntry::new(mac.clone(), None, sub));
+    pub(crate) fn add_mac(&self, mac: &MacAddr, sub: Option<Arc<dyn Any + Send + Sync>>) -> Result<(), ()> {
+        let ky = EthKey::new(&mac);
+        let ent = Arc::new(EthEntry::new(mac.clone(), None, sub));
         let mut ret = Err(());
         {
             let mut w = self.common.res_write_borrow();
@@ -93,8 +128,16 @@ impl EthernetProtocol {
         ret
     }
     
-    pub(crate) fn search_mac(&self, mac: &EthKey) -> Result<Arc<EthEntry>, ()> {
-        Err(())
+    pub(crate) fn search_mac(&self, mac: &MacAddr) -> Result<Arc<EthEntry>, ()> {
+        let key = EthKey::new(&mac);
+        let mut r = self.common.res_read_borrow();
+        match r.get(&key).map(Arc::clone) {
+            Some(ent) => Ok(ent),
+            None => {
+                println!("No entry found for {:?}", mac);
+                Err(())
+            },
+        }
     }
 }
 

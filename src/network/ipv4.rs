@@ -1,8 +1,9 @@
 use std::any::Any;
 use std::collections::hash_map::Entry;
-use std::fmt::Debug;
+use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
 use std::net::Ipv4Addr;
+use std::str::FromStr;
 use std::sync::Arc;
 use crate::network::arp::ArpProtocol;
 use crate::network::ethernet::{EthEntry, EthKey, MacAddr};
@@ -13,7 +14,34 @@ use crate::network::subres::SubInfo;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IPv4Addr {
-    pub val: [u8; 6],
+    pub val: [u8; 4],
+}
+
+impl FromStr for IPv4Addr {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let parts: Vec<&str> = s.split('.').collect();
+        if parts.len() != 4 {
+            return Err("Invalid IPv4 format".into());
+        }
+
+        let mut val = [0u8; 4];
+        for (i, part) in parts.iter().enumerate() {
+            val[i] = part.parse::<u8>()
+                .map_err(|_| format!("Invalid octet: {}", part))?;
+        }
+
+        Ok(IPv4Addr { val })
+    }
+}
+
+impl Display for IPv4Addr {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}.{}.{}.{}",
+               self.val[0], self.val[1], self.val[2], self.val[3]
+        )
+    }
 }
 
 /// CIDR-aware key: network address + prefix length

@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::hash::Hash;
-use std::sync::{Mutex, RwLock, RwLockWriteGuard};
+use std::sync::{Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use crate::network::ethernet::EthKey;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -76,6 +76,11 @@ impl<ProtocolKey, ProtocolRes> NetworkProtocolMng<ProtocolKey, ProtocolRes> {
 
     pub(crate) fn res_write_borrow(&self) -> RwLockWriteGuard<HashMap<ProtocolKey, ProtocolRes>> {
         let res = self.res_table.write();
+        res.unwrap()
+    }
+
+    pub(crate) fn res_read_borrow(&self) -> RwLockReadGuard<HashMap<ProtocolKey, ProtocolRes>> {
+        let res = self.res_table.read();
         res.unwrap()
     }
 }

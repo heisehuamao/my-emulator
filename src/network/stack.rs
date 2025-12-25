@@ -46,7 +46,7 @@ impl NetworkStack {
         }
     }
 
-    pub fn add_mac(&self, mac: MacAddr) -> Result<(), ()> {
+    pub fn add_mac(&self, mac: &MacAddr) -> Result<(), ()> {
         self.protocol_eth.add_mac(mac, None)
     }
 
@@ -73,18 +73,25 @@ impl NetworkStack {
 
     pub fn add_ipv4<'a>(&self, ip: IPv4Addr, sub_addr: Option<&'a(dyn Any + Send + Sync)>) -> Result<(), ()> {
         let Some(sub_addr_val) = sub_addr else {
+            println!("No sub addr for ipv4");
             return Err(());
         };
 
-        if let Some(eth) = sub_addr_val.downcast_ref::<EthKey>(){
+        if let Some(eth) = sub_addr_val.downcast_ref::<MacAddr>(){
             // search mac
             let search_res = self.protocol_eth.search_mac(eth);
             let ret = match search_res { 
-                Ok(mac_res) => self.protocol_ipv4.add_ipv4(ip, Some(mac_res)),
-                Err(_) => Err(())
+                Ok(mac_res) => {
+                    self.protocol_ipv4.add_ipv4(ip, Some(mac_res))
+                },
+                Err(_) => {
+                    println!("Error while searching MAC for IPv4");
+                    Err(())
+                }
             };
             ret
         } else {
+            println!("Sub for ipv4 type error");
             Err(())
         }
     }

@@ -111,19 +111,6 @@ impl Executor {
             Runtime::clear_scheduler();
         });
         
-        // let test_func: AsyncTaskFnBox = Box::new(|name: String| {
-        //     Box::pin(async move {
-        //         let start = Instant::now();
-        //         for i in 1..10 {
-        //             // Self::sleep(Duration::new(1, 0)).await;
-        //             println!("======== Example::async task {} Hello, {}, time: {}", i, name, start.elapsed().as_millis());
-        //             Runtime::sleep(Duration::new(1, 0)).await;
-        //         }
-        //         println!("======@ example end at {}", start.elapsed().as_millis());
-        //     })
-        // });
-        // let msg = SchedMsg::new(String::from("new_task"), Some(test_func));
-        // _ = exe_end.try_send(msg);
         let sun = SubThread::new(new_id, exe_end, handle);
         self.subs.borrow_mut().push(sun);
         // self.conn = Some(exe_end);
