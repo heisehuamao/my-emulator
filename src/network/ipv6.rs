@@ -3,7 +3,7 @@ use std::net::Ipv6Addr;
 use crate::network::ipv4::IPv4Protocol;
 use crate::network::module_traits::AsyncProtocolModule;
 use crate::network::packet::NetworkPacket;
-use crate::network::protocol::{NetworkProtocolMng, ProtocolHeaderType, ProtocolMetaData};
+use crate::network::protocol::{NetworkProtocolMng, ProtocolType, ProtocolMetaData};
 
 /// CIDR-aware IPv6 key: network address + prefix length
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -37,7 +37,7 @@ pub(crate) struct IPv6Protocol {
 impl IPv6Protocol {
     pub(crate) fn new() -> IPv6Protocol {
         IPv6Protocol {
-            common: NetworkProtocolMng::new(ProtocolHeaderType::IPv6),
+            common: NetworkProtocolMng::new(ProtocolType::IPv6),
             mtu: 1500,
             hop_limit_default: 64,
         }
@@ -56,7 +56,7 @@ impl AsyncProtocolModule<NetworkPacket> for IPv6Protocol {
     async fn decode(&self, p: NetworkPacket) -> Self::DecodeResult {
         println!("----- decode ipv6 -----");
         let mut meta = ProtocolMetaData::new();
-        meta.set_pt(ProtocolHeaderType::UDP);
+        meta.set_pt(ProtocolType::UDP);
         (p, Ok(meta))
     }
 
@@ -68,7 +68,7 @@ impl AsyncProtocolModule<NetworkPacket> for IPv6Protocol {
     fn sync_decode(&self, p: NetworkPacket) -> Self::DecodeResult {
         println!("----- decode ipv6 -----");
         let mut meta = ProtocolMetaData::new();
-        meta.set_pt(ProtocolHeaderType::UDP);
+        meta.set_pt(ProtocolType::UDP);
         (p, Ok(meta))
     }
 }

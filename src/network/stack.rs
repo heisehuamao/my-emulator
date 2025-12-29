@@ -10,13 +10,13 @@ use crate::network::icmpv6::ICMPv6Protocol;
 use crate::network::ipv4::IPv4Protocol;
 use crate::network::ipv6::IPv6Protocol;
 use crate::network::packet::NetworkPacket;
-use crate::network::protocol::{ProtocolHeaderType, ProtocolMetaData};
+use crate::network::protocol::{ProtocolType, ProtocolMetaData, ProtocolResValue};
 use crate::network::socket::NetworkSocket;
 use crate::network::tcp::TCPProtocol;
 use crate::network::udp::UDPProtocol;
 
 pub struct NetworkStack {
-    stack_type: ProtocolHeaderType,
+    stack_type: ProtocolType,
     socket_layer: Arc<NetworkSocket>,
     protocol_arp: Arc<ArpProtocol>,
     protocol_ipv4: Arc<IPv4Protocol>,
@@ -32,7 +32,7 @@ pub struct NetworkStack {
 impl NetworkStack {
     pub fn new_eth_stack() -> NetworkStack {
         NetworkStack{
-            stack_type: ProtocolHeaderType::Ethernet,
+            stack_type: ProtocolType::Ethernet,
             socket_layer: Arc::new(NetworkSocket::new()),
             protocol_arp: Arc::new(ArpProtocol::new()),
             protocol_ipv4: Arc::new(IPv4Protocol::new()),
@@ -66,7 +66,7 @@ impl NetworkStack {
 
     fn add_ipv4_internal(&self, ip: &IPv4Addr, sub: Option<Arc<dyn Any + Send + Sync>>) -> Result<(), ()> {
         match self.stack_type {
-            ProtocolHeaderType::Ethernet => self.add_ipv4_on_ethernet(ip, sub),
+            ProtocolType::Ethernet => self.add_ipv4_on_ethernet(ip, sub),
             _ => Err(())
         }
     }
@@ -95,6 +95,29 @@ impl NetworkStack {
             Err(())
         }
     }
+
+    pub fn add_udp_v4<'a>(&self, ip: &IPv4Addr, port: u16) -> Result<(), ()> {
+        // search ipv4
+        let search_ipv4_res = self.protocol_ipv4.search_ipv4(ip, ProtocolResValue::default());
+        match search_ipv4_res {
+            Ok(ipv4_res) => {
+                self.protocol_udp.add_udp(port, ipv4_res)
+            }
+            Err(_) => Err(())
+        }
+    }
+
+    pub fn mac_show_all(&self) {
+        self.protocol_eth.show_all();
+    }
+
+    pub fn ipv4_show_all(&self) {
+        self.protocol_ipv4.show_all();
+    }
+
+    pub fn udp_show_all(&self) {
+        self.protocol_udp.show_all();
+    }
 }
 
 impl AsyncNetIOModule<NetworkPacket> for NetworkStack
@@ -112,7 +135,7 @@ impl AsyncNetIOModule<NetworkPacket> for NetworkStack
         let (mut p, mut res) = self.driver_layer.clone().rx(p).await;
 
         match self.stack_type {
-            ProtocolHeaderType::Ethernet => {
+            ProtocolType::Ethernet => {
                 // L2
                 (p, res) = self.protocol_eth.sync_decode(p);
                 let l3_meta = match res {
@@ -122,9 +145,9 @@ impl AsyncNetIOModule<NetworkPacket> for NetworkStack
                 
                 // L3
                 (p, res) = match l3_meta.get_pt() {
-                    ProtocolHeaderType::ARP => self.protocol_arp.sync_decode(p),
-                    ProtocolHeaderType::IPv4 => self.protocol_ipv4.sync_decode(p),
-                    ProtocolHeaderType::IPv6 => self.protocol_ipv6.sync_decode(p),
+                    ProtocolType::ARP => self.protocol_arp.sync_decode(p),
+                    ProtocolType::IPv4 => self.protocol_ipv4.sync_decode(p),
+                    ProtocolType::IPv6 => self.protocol_ipv6.sync_decode(p),
                     _ => return (p, Err(())),
                 };
                 let l4_meta = match res {
@@ -134,8 +157,8 @@ impl AsyncNetIOModule<NetworkPacket> for NetworkStack
                 
                 // l4
                 (p, res) = match l4_meta.get_pt() {
-                    ProtocolHeaderType::UDP => self.protocol_udp.sync_decode(p),
-                    ProtocolHeaderType::TCP => self.protocol_tcp.sync_decode(p),
+                    ProtocolType::UDP => self.protocol_udp.sync_decode(p),
+                    ProtocolType::TCP => self.protocol_tcp.sync_decode(p),
                     _ => return (p, Err(())),
                 };
                 let app_meta = match res {

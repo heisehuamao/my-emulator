@@ -3,7 +3,7 @@ use std::net::Ipv4Addr;
 use crate::network::arp::ArpProtocol;
 use crate::network::module_traits::AsyncProtocolModule;
 use crate::network::packet::NetworkPacket;
-use crate::network::protocol::{NetworkProtocolMng, ProtocolHeaderType, ProtocolMetaData};
+use crate::network::protocol::{NetworkProtocolMng, ProtocolType, ProtocolMetaData};
 
 /// CIDR-aware key: network address + prefix length
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -38,7 +38,7 @@ pub(crate) struct TCPProtocol {
 impl TCPProtocol {
     pub(crate) fn new() -> TCPProtocol {
         TCPProtocol {
-            common: NetworkProtocolMng::new(ProtocolHeaderType::IPv4),
+            common: NetworkProtocolMng::new(ProtocolType::IPv4),
             ttl_default: 64,
             mtu: 1500,
             allow_fragmentation: false,
@@ -58,7 +58,7 @@ impl AsyncProtocolModule<NetworkPacket> for TCPProtocol {
     async fn decode(&self, p: NetworkPacket) -> Self::DecodeResult {
         println!("----- decode TCP -----");
         let mut meta = ProtocolMetaData::new();
-        meta.set_pt(ProtocolHeaderType::Socket);
+        meta.set_pt(ProtocolType::Socket);
         (p, Ok(meta))
     }
 
@@ -70,7 +70,7 @@ impl AsyncProtocolModule<NetworkPacket> for TCPProtocol {
     fn sync_decode(&self, p: NetworkPacket) -> Self::DecodeResult {
         println!("----- decode TCP -----");
         let mut meta = ProtocolMetaData::new();
-        meta.set_pt(ProtocolHeaderType::Socket);
+        meta.set_pt(ProtocolType::Socket);
         (p, Ok(meta))
     }
 }

@@ -1,7 +1,7 @@
 use crate::network::ethernet::EthernetProtocol;
 use crate::network::module_traits::AsyncProtocolModule;
 use crate::network::packet::NetworkPacket;
-use crate::network::protocol::{NetworkProtocolMng, ProtocolHeaderType, ProtocolMetaData};
+use crate::network::protocol::{NetworkProtocolMng, ProtocolType, ProtocolMetaData};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) struct ArpKey {
@@ -23,7 +23,7 @@ pub(crate) struct ArpProtocol {
 impl ArpProtocol {
     pub(crate) fn new() -> ArpProtocol {
         ArpProtocol {
-            common: NetworkProtocolMng::new(ProtocolHeaderType::ARP),
+            common: NetworkProtocolMng::new(ProtocolType::ARP),
             cache_timeout: 0,
         }
     }

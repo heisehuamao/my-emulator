@@ -67,11 +67,28 @@ fn main() {
                     Ok(_) => println!("adding {} ok", ip2),
                     Err(_) => println!("adding {} failed", ip2)
                 }
+
+                // add udp
+                cloned_stk.add_udp_v4(&ip1, 1);
+                cloned_stk.add_udp_v4(&ip2, 1);
             } else {
                 println!("adding {} failed", mac)
             }
+            
+            
 
             println!("======@ example end at {}", start.elapsed().as_millis());
+
+            // show all the resources
+            println!("====== MAC resources ======");
+            cloned_stk.mac_show_all();
+
+            println!("====== IPv4 resources ======");
+            cloned_stk.ipv4_show_all();
+
+            println!("====== UDP resources ======");
+            cloned_stk.udp_show_all();
+            
         })
     });
     let msg = SchedMsg::new(String::from("new_task"), Some(test_func));

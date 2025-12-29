@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::network::ipv4::{IPv4Entry, IPv4Key};
 use crate::network::module_traits::AsyncNetIOModule;
 use crate::network::packet::NetworkPacket;
-use crate::network::protocol::{NetworkProtocolMng, ProtocolHeaderType};
+use crate::network::protocol::{NetworkProtocolMng, ProtocolType};
 use crate::network::user_app::UsrApplication;
 
 pub(crate) struct SocketRes {
@@ -18,7 +18,7 @@ pub(crate) struct NetworkSocket {
 impl NetworkSocket {
     pub(crate) fn new() -> Self {
         NetworkSocket {
-            common: NetworkProtocolMng::new(ProtocolHeaderType::None),
+            common: NetworkProtocolMng::new(ProtocolType::None),
         }
     }
 }

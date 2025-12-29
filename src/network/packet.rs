@@ -1,7 +1,7 @@
 use std::cell::{Cell, Ref, RefCell};
 use std::fmt;
 use std::fmt::{Debug, Formatter};
-use crate::network::protocol::ProtocolHeaderType;
+use crate::network::protocol::ProtocolType;
 
 struct FixedPacketBuffer {
     w_idx: Cell<usize>,
@@ -57,13 +57,13 @@ impl FixedPacketBuffer {
 }
 
 struct PacketFragHeader {
-    hdr_type: Cell<ProtocolHeaderType>,
+    hdr_type: Cell<ProtocolType>,
     hdr_offset: Cell<u32>,
     hdr_len: Cell<u32>,
 }
 
 impl PacketFragHeader {
-    pub(crate) fn new(hdr_type: ProtocolHeaderType) -> PacketFragHeader {
+    pub(crate) fn new(hdr_type: ProtocolType) -> PacketFragHeader {
         PacketFragHeader {
             hdr_type: Cell::new(hdr_type),
             hdr_offset: Cell::new(0),

@@ -7,7 +7,7 @@ use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use crate::network::module_traits::AsyncProtocolModule;
 use crate::network::packet::NetworkPacket;
-use crate::network::protocol::{NetworkProtocolMng, ProtocolHeaderType, ProtocolMetaData};
+use crate::network::protocol::{NetworkProtocolMng, ProtocolType, ProtocolMetaData};
 
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -85,6 +85,12 @@ pub(crate) struct EthEntry {
     sub: Option<Arc<dyn Any + Send + Sync>>,
 }
 
+impl Display for EthEntry {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.mac)
+    }
+}
+
 impl EthEntry {
     pub fn new(mac: MacAddr, vlan: Option<u16>, sub: Option<Arc<dyn Any + Send + Sync>>) -> EthEntry {
         EthEntry { mac, vlan, sub: None }
@@ -104,7 +110,7 @@ pub(crate) struct EthernetProtocol {
 impl EthernetProtocol {
     pub(crate) fn new() -> EthernetProtocol {
         EthernetProtocol {
-            common: NetworkProtocolMng::<EthKey, Arc<EthEntry>>::new(ProtocolHeaderType::Ethernet),
+            common: NetworkProtocolMng::<EthKey, Arc<EthEntry>>::new(ProtocolType::Ethernet),
             // mac_table: Mutex::new(Default::default()),
             default_vlan: None,
             enable_vlan: false,
@@ -129,7 +135,7 @@ impl EthernetProtocol {
     }
     
     pub(crate) fn search_mac(&self, mac: &MacAddr) -> Result<Arc<EthEntry>, ()> {
-        let key = EthKey::new(&mac);
+        let key = EthKey::new(mac);
         let r = self.common.res_read_borrow();
         match r.get(&key).map(Arc::clone) {
             Some(ent) => Ok(ent),
@@ -137,6 +143,13 @@ impl EthernetProtocol {
                 println!("No entry found for {:?}", mac);
                 Err(())
             },
+        }
+    }
+
+    pub(crate) fn show_all(&self) {
+        let r = self.common.res_read_borrow();
+        for (_, ent) in r.iter() {
+            println!("{}", ent);
         }
     }
 }
@@ -153,7 +166,7 @@ impl AsyncProtocolModule<NetworkPacket> for EthernetProtocol {
     async fn decode(&self, p: NetworkPacket) -> Self::DecodeResult {
         println!("----- decode ethernet -----");
         let mut meta = ProtocolMetaData::new();
-        meta.set_pt(ProtocolHeaderType::IPv4);
+        meta.set_pt(ProtocolType::IPv4);
         (p, Ok(meta))
     }
 
@@ -165,7 +178,7 @@ impl AsyncProtocolModule<NetworkPacket> for EthernetProtocol {
     fn sync_decode(&self, p: NetworkPacket) -> Self::DecodeResult {
         println!("----- decode ethernet -----");
         let mut meta = ProtocolMetaData::new();
-        meta.set_pt(ProtocolHeaderType::IPv4);
+        meta.set_pt(ProtocolType::IPv4);
         (p, Ok(meta))
     }
 }

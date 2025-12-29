@@ -2,15 +2,12 @@ use std::any::Any;
 use std::collections::hash_map::Entry;
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
-use std::net::Ipv4Addr;
 use std::str::FromStr;
 use std::sync::Arc;
-use crate::network::arp::ArpProtocol;
-use crate::network::ethernet::{EthEntry, EthKey, MacAddr};
+use crate::network::ethernet::{EthEntry, EthKey};
 use crate::network::module_traits::AsyncProtocolModule;
 use crate::network::packet::NetworkPacket;
-use crate::network::protocol::{NetworkProtocolMng, ProtocolHeaderType, ProtocolMetaData, ProtocolResValue};
-use crate::network::subres::SubInfo;
+use crate::network::protocol::{NetworkProtocolMng, ProtocolType, ProtocolMetaData, ProtocolResValue};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IPv4Addr {
@@ -49,11 +46,12 @@ impl Display for IPv4Addr {
 pub struct IPv4Key {
     pub addr: IPv4Addr, // network address (masked)
     pub sub: ProtocolResValue,
+    // pub sub: Option<Box<dyn Any + Hash>>
 }
 
 impl IPv4Key {
-    pub fn new(addr: IPv4Addr, sub: ProtocolResValue) -> Self {
-        IPv4Key { addr, sub }
+    pub fn new(addr: &IPv4Addr, sub: ProtocolResValue) -> Self {
+        IPv4Key { addr: addr.clone(), sub }
     }
 }
 
@@ -73,6 +71,12 @@ pub(crate) struct IPv4Entry {
     sub: Option<Arc<dyn Any + Send + Sync>>,
 }
 
+impl Display for IPv4Entry {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.addr)
+    }
+}
+
 impl IPv4Entry {
     pub fn new(addr: IPv4Addr, mtu: u16, sub: Option<Arc<dyn Any + Send + Sync>>) -> Self {
         IPv4Entry {
@@ -81,6 +85,10 @@ impl IPv4Entry {
             mtu,
             sub,
         }
+    }
+
+    pub(crate) fn addr(&self) -> &IPv4Addr {
+        &self.addr
     }
 }
 
@@ -95,15 +103,15 @@ pub(crate) struct IPv4Protocol {
 impl IPv4Protocol {
     pub(crate) fn new() -> IPv4Protocol {
         IPv4Protocol {
-            common: NetworkProtocolMng::new(ProtocolHeaderType::IPv4),
+            common: NetworkProtocolMng::new(ProtocolType::IPv4),
             ttl_default: 64,
             mtu: 1500,
             allow_fragmentation: false,
         }
     }
 
-    pub(crate) fn add_ipv4(&self, addr: &IPv4Addr, sub: Option<Arc<dyn Any + Send + Sync>>,) -> Result<(), ()> {
-        let key = IPv4Key::new(addr.clone(), ProtocolResValue::default());
+    pub(crate) fn add_ipv4(&self, addr: &IPv4Addr, sub: Option<Arc<dyn Any + Send + Sync>>) -> Result<(), ()> {
+        let key = IPv4Key::new(addr, ProtocolResValue::default());
         let ent = Arc::new(IPv4Entry::new(addr.clone(), 1000, sub));
         let mut ret = Err(());
         {
@@ -117,6 +125,26 @@ impl IPv4Protocol {
             }
         }
         ret
+    }
+
+    pub(crate) fn search_ipv4(&self, addr: &IPv4Addr, sub: ProtocolResValue) -> Result<Arc<IPv4Entry>, ()> {
+        let key = IPv4Key::new(addr, sub);
+        let r = self.common.res_read_borrow();
+        let result = r.get(&key);
+        match result {
+            Some(ent) => Ok(ent.clone()),
+            None => {
+                println!("No entry found for {:?}", addr);
+                Err(())
+            },
+        }
+    }
+
+    pub(crate) fn show_all(&self) {
+        let r = self.common.res_read_borrow();
+        for (_, ent) in r.iter() {
+            println!("{}", ent);
+        }
     }
 }
 
@@ -132,7 +160,7 @@ impl AsyncProtocolModule<NetworkPacket> for IPv4Protocol {
     async fn decode(&self, p: NetworkPacket) -> Self::DecodeResult {
         println!("----- decode ipv4 -----");
         let mut meta = ProtocolMetaData::new();
-        meta.set_pt(ProtocolHeaderType::UDP);
+        meta.set_pt(ProtocolType::UDP);
         (p, Ok(meta))
     }
 
@@ -144,7 +172,7 @@ impl AsyncProtocolModule<NetworkPacket> for IPv4Protocol {
     fn sync_decode(&self, p: NetworkPacket) -> Self::DecodeResult {
         println!("----- decode ipv4 -----");
         let mut meta = ProtocolMetaData::new();
-        meta.set_pt(ProtocolHeaderType::UDP);
+        meta.set_pt(ProtocolType::UDP);
         (p, Ok(meta))
     }
 }

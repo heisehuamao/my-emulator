@@ -1,5 +1,5 @@
 use std::net::Ipv6Addr;
-use crate::network::protocol::{NetworkProtocolMng, ProtocolHeaderType};
+use crate::network::protocol::{NetworkProtocolMng, ProtocolType};
 
 /// ICMPv6 key: destination IPv6 + type + code
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -26,7 +26,7 @@ pub struct ICMPv6Protocol {
 impl ICMPv6Protocol {
     pub(crate) fn new() -> ICMPv6Protocol {
         ICMPv6Protocol {
-            common: NetworkProtocolMng::new(ProtocolHeaderType::ICMPv6),
+            common: NetworkProtocolMng::new(ProtocolType::ICMPv6),
             default_hop_limit: 0,
         }
     }
