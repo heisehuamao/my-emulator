@@ -5,6 +5,11 @@ use crate::network::module_traits::AsyncProtocolModule;
 use crate::network::packet::NetworkPacket;
 use crate::network::protocol::{NetworkProtocolMng, ProtocolType, ProtocolMetaData};
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct IPv6Addr {
+    pub val: [u8; 16],
+}
+
 /// CIDR-aware IPv6 key: network address + prefix length
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Ipv6Key {

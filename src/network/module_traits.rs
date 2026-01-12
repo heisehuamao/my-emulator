@@ -36,7 +36,6 @@ pub trait AsyncSocketModule<Pkt> {
     type CreateParam;
     type ListenParam;
     type ConnParam;
-
     type CreateResult;
     type DestroyResult;
     type ListenResult;
@@ -56,3 +55,35 @@ pub trait AsyncSocketModule<Pkt> {
 
     async fn tx(&self, p: Pkt) -> Self::TxResult;
 }
+
+// pub trait SyncSocketModule<Pkt> {
+//     type Identifier;
+//     type CreateParam;
+//     type BindParam;
+//     type ListenParam;
+//     type ConnParam;
+//     type AcceptParam;
+//     type CreateResult;
+//     type DestroyResult;
+//     type ListenResult;
+//     type ConnResult;
+//     type RxResult;
+//     type TxResult;
+//     type AcceptResult;
+// 
+//     fn create(&self, p: Self::CreateParam) -> Self::CreateResult;
+// 
+//     fn destroy(&self, id: Self::Identifier) -> Self::DestroyResult;
+// 
+//     fn bind(&self, id: Self::Identifier, p: Self::BindParam) -> Self::ListenResult;
+//     
+//     fn listen(&self, id: Self::Identifier, p: Self::ListenParam) -> Self::ListenResult;
+// 
+//     fn connect(&self, id: Self::Identifier, p: Self::ConnParam) -> Self::ConnResult;
+// 
+//     fn accept(&self, id: Self::Identifier, p: Self::AcceptParam) -> Self::AcceptResult;
+// 
+//     fn rx(&self, id: Self::Identifier, p: Pkt) -> Self::RxResult;
+// 
+//     fn tx(&self, id: Self::Identifier, p: Pkt) -> Self::TxResult;
+// }

@@ -11,13 +11,13 @@ use crate::network::ipv4::IPv4Protocol;
 use crate::network::ipv6::IPv6Protocol;
 use crate::network::packet::NetworkPacket;
 use crate::network::protocol::{ProtocolType, ProtocolMetaData, ProtocolResValue};
-use crate::network::socket::NetworkSocket;
+use crate::network::socket::NetworkSocketLayer;
 use crate::network::tcp::TCPProtocol;
 use crate::network::udp::UDPProtocol;
 
 pub struct NetworkStack {
     stack_type: ProtocolType,
-    socket_layer: Arc<NetworkSocket>,
+    socket_layer: Arc<NetworkSocketLayer>,
     protocol_arp: Arc<ArpProtocol>,
     protocol_ipv4: Arc<IPv4Protocol>,
     protocol_ipv6: Arc<IPv6Protocol>,
@@ -33,7 +33,7 @@ impl NetworkStack {
     pub fn new_eth_stack() -> NetworkStack {
         NetworkStack{
             stack_type: ProtocolType::Ethernet,
-            socket_layer: Arc::new(NetworkSocket::new()),
+            socket_layer: Arc::new(NetworkSocketLayer::new()),
             protocol_arp: Arc::new(ArpProtocol::new()),
             protocol_ipv4: Arc::new(IPv4Protocol::new()),
             protocol_ipv6: Arc::new(IPv6Protocol::new()),
@@ -167,15 +167,15 @@ impl AsyncNetIOModule<NetworkPacket> for NetworkStack
                 };
                 
                 // socket
-                self.socket_layer.clone().rx(p).await
-                // (p, Ok(()))
+                // let (p, _) = self.socket_layer.rx();
+                (p, Ok(()))
             }
             _ => (p, Err(()))
         }
     }
     async fn tx(self: Arc<Self>, p: NetworkPacket) -> Self::TxResult {
         println!("!!!!!!!!!stack tx test. {:?}", p);
-        let (p, res) = self.socket_layer.clone().tx(p).await;
+        // let (p, res) = self.socket_layer.clone().tx(p).await;
         let (p, res) = self.protocol_eth.sync_encode(p);
         let (p, res) = self.protocol_arp.sync_encode(p);
         let (p, res) = self.protocol_ipv4.sync_encode(p);

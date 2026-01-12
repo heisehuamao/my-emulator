@@ -76,7 +76,7 @@ pub struct UDPEntryV4 {
 
 impl Display for UDPEntryV4 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{}/{}", self.addr, self.port)
+        write!(f, "[{}]-[{}]", self.addr, self.port)
     }
 }
 impl UDPEntryV4 {
