@@ -11,7 +11,7 @@ use crate::network::ipv4::IPv4Protocol;
 use crate::network::ipv6::IPv6Protocol;
 use crate::network::packet::NetworkPacket;
 use crate::network::protocol::{ProtocolType, ProtocolMetaData, ProtocolResValue};
-use crate::network::socket::NetworkSocketLayer;
+use crate::network::socket::{NetworkDomain, NetworkSocketLayer, NetworkType, SockAcceptParam, SockBindParam, SockListenParam, Socket, SocketConnectParam, SocketRecvParam, SocketSendParam};
 use crate::network::tcp::TCPProtocol;
 use crate::network::udp::UDPProtocol;
 
@@ -117,6 +117,43 @@ impl NetworkStack {
 
     pub fn udp_show_all(&self) {
         self.protocol_udp.show_all();
+    }
+
+    pub fn socket_create(&self, dom: NetworkDomain, t: NetworkType, pt: ProtocolType) -> Result<Socket, ()> {
+        // Err(())
+        self.socket_layer.socket_create()
+    }
+    
+    pub fn socket_bind(&self, id: &Socket, p: &SockBindParam) -> Result<(), ()> {
+        self.socket_layer.socket_bind(id, p, self)
+    }
+
+    fn socket_listen(&self, id: &Socket, p: &SockListenParam) -> Result<(), ()> {
+        self.socket_layer.socket_listen(id, p, self)
+    }
+
+    fn socket_accept(&self, id: &Socket, p: &SockAcceptParam) -> Result<(), ()> {
+        self.socket_layer.socket_accept(id, p, self)
+    }
+
+    fn socket_connect(&self, id: &Socket, pkt: &mut NetworkPacket, p: &SocketConnectParam) -> Result<(), ()> {
+        self.socket_layer.socket_connect(id, pkt, self, p)
+    }
+
+    fn socket_send(&self, id: &Socket, pkt: &mut NetworkPacket, p: &SocketSendParam) -> Result<(), ()> {
+       self.socket_layer.socket_send(id, pkt, self, p)
+    }
+
+    fn socket_recv(&self, id: &Socket, pkt: &mut NetworkPacket, p: &SocketRecvParam) -> Result<(), ()> {
+        self.socket_layer.socket_recv(id, pkt, self, p)
+    }
+
+    fn socket_close(&self, id: &Socket) -> Result<(), ()> {
+        self.socket_layer.socket_close(id, self)
+    }
+
+    fn socket_destroy(&self, id: &Socket) -> Result<(), ()> {
+        self.socket_layer.socket_destroy(id, self)
     }
 }
 

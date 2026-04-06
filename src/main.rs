@@ -12,6 +12,7 @@ use crate::network::ipv4::IPv4Addr;
 use crate::network::module_traits::AsyncNetIOModule;
 use crate::network::packet::NetworkPacket;
 use crate::network::stack::NetworkStack;
+use crate::network::user_container::UserContainer;
 
 mod executor;
 mod network;
@@ -35,6 +36,7 @@ fn main() {
     let cloned_stk = stk.clone();
 
 
+    // stack task
     let test_func: AsyncTaskFnBox = Box::new(move |name: String| {
         Box::pin(async move {
             let start = Instant::now();
@@ -74,9 +76,6 @@ fn main() {
             } else {
                 println!("adding {} failed", mac)
             }
-            
-            
-
             println!("======@ example end at {}", start.elapsed().as_millis());
 
             // show all the resources
@@ -94,6 +93,20 @@ fn main() {
     let msg = SchedMsg::new(String::from("new_task"), Some(test_func));
     _ = e.try_send(thread_id, msg);
 
+    // app task
+    let cloned_stk = stk.clone();
+    let app_func: AsyncTaskFnBox = Box::new(move |name: String| {
+        Box::pin(async move {
+            let mut app_container = UserContainer::new(cloned_stk);
+            loop {
+                app_container.run();
+                Runtime::sleep(Duration::new(1, 0)).await;
+            }
+        })
+    });
+    let msg = SchedMsg::new(String::from("new_task"), Some(app_func));
+    _ = e.try_send(thread_id, msg);
+    
     while running.load(Ordering::SeqCst)  {
         // wait
         thread::sleep(Duration::from_secs(1));

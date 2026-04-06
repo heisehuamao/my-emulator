@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::fmt::Debug;
+use std::pin::Pin;
 use std::rc::Rc;
 use std::task::{Context, Poll};
 use std::thread;
@@ -70,12 +71,17 @@ impl Scheduler {
         self.task_sleep_ring.add_task_node(delay_to, task);
     }
     
+    // fn create_app_container_task() -> Pin<Box<dyn Future<Output = ()>>> {
+    //     Box::pin(
+    //         async move {}
+    //     )
+    // }
+    
     pub fn run(self: Rc<Self>, param: SchedParams) {
         // create a context
         let sched_ctx = Rc::new(SchedContext::new(0, 0, self.clone()));
         let sched_waker = sched_waker_create(sched_ctx.clone());
         let mut ctx = Context::from_waker(&sched_waker);
-        
         loop {
             if let Ok(mut val) = self.try_recv() {
                 println!("thread {} recved: {:?}", param.get_id(), val);

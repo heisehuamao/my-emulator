@@ -8,7 +8,16 @@ use crate::network::module_traits::{AsyncNetIOModule, SyncNetIOModule};
 use crate::network::packet::NetworkPacket;
 use crate::network::protocol::{NetworkProtocolMng, ProtocolType};
 use crate::network::stack::NetworkStack;
-use crate::network::user_app::UsrApplication;
+use crate::network::user_app::UserApplication;
+
+pub enum NetworkDomain {
+    AF_INET,
+}
+
+pub enum NetworkType {
+    SOCK_DGRAM,
+    SOCK_RAW,
+}
 
 pub struct Socket {
     slot: u32,
@@ -24,11 +33,11 @@ impl Socket {
 pub(crate) struct SocketRes {
     id: Socket,
     proto: ProtocolType,
-    owner: Arc<UsrApplication>,
+    owner: Arc<UserApplication>,
 }
 
 impl SocketRes {
-    fn new(id: Socket, proto: ProtocolType, owner: Arc<UsrApplication>) -> SocketRes {
+    fn new(id: Socket, proto: ProtocolType, owner: Arc<UserApplication>) -> SocketRes {
         SocketRes {
             id, proto, owner
         }
@@ -36,7 +45,7 @@ impl SocketRes {
 }
 
 pub(crate) struct NetworkSocketLayer {
-    stack: Weak<NetworkStack>,
+    // stack: Weak<NetworkStack>,
     sock_map: RwLock<Vec<Option<Arc<SocketRes>>>>,
     id_generator: AtomicU32,
     id_seq: AtomicU32,
@@ -50,7 +59,7 @@ impl NetworkSocketLayer {
     pub(crate) fn new() -> Self {
         let max = (1 << 20) as u32; // 1,048,576
         NetworkSocketLayer {
-            stack: Default::default(),
+            // stack: Default::default(),
             sock_map: RwLock::new(vec![None; max as usize]),
             // common: NetworkProtocolMng::new(ProtocolType::None),
             id_generator: AtomicU32::new(1),
@@ -95,7 +104,7 @@ impl NetworkSocketLayer {
         }
     }
 
-    fn socket_create(&self) -> Result<Socket, ()> {
+    pub(crate) fn socket_create(&self) -> Result<Socket, ()> {
         if let Ok(id) = self.allocate_id() {
             let sk_id = Socket::new(id, self.id_seq.fetch_add(1, Ordering::SeqCst));
             Ok(sk_id)
@@ -104,10 +113,10 @@ impl NetworkSocketLayer {
         }
     }
 
-    fn socket_bind(&self, id: &Socket, p: &SockBindParam) -> Result<(), ()> {
-        let Some(stack) = self.stack.upgrade() else {
-            return Err(());
-        };
+    pub(crate) fn socket_bind(&self, id: &Socket, p: &SockBindParam, stack: &NetworkStack) -> Result<(), ()> {
+        // let Some(stack) = self.stack.upgrade() else {
+        //     return Err(());
+        // };
 
         // TODO: creat socket res
         match &p.proto {
@@ -122,36 +131,36 @@ impl NetworkSocketLayer {
             _ => Err(()),
         }
     }
-    
-    fn socket_listen(&self, id: &Socket, p: &SockListenParam) -> Result<(), ()> {
+
+    pub(crate) fn socket_listen(&self, id: &Socket, p: &SockListenParam, stack: &NetworkStack) -> Result<(), ()> {
         Err(())
     }
     
     // called by rx procedure
-    fn socket_accept(&self, id: &Socket, p: &SockAcceptParam) -> Result<(), ()> {
+    pub(crate) fn socket_accept(&self, id: &Socket, p: &SockAcceptParam, stack: &NetworkStack) -> Result<(), ()> {
         Err(())
     }
-    
-    fn socket_connect(&self, id: &Socket, pkt: &mut NetworkPacket, p: &SocketConnectParam) -> Result<(), ()> {
+
+    pub(crate) fn socket_connect(&self, id: &Socket, pkt: &mut NetworkPacket, stack: &NetworkStack, p: &SocketConnectParam) -> Result<(), ()> {
         Err(())
     }
-    
-    fn socket_send(&self, id: &Socket, pkt: &mut NetworkPacket, p: &SocketSendParam) -> Result<(), ()> {
+
+    pub(crate) fn socket_send(&self, id: &Socket, pkt: &mut NetworkPacket, stack: &NetworkStack, p: &SocketSendParam) -> Result<(), ()> {
         Err(())
     }
     
     // NOTE: called by rx procedure
-    fn socket_recv(&self, id: &Socket, pkt: &mut NetworkPacket, p: &SocketRecvParam) -> Result<(), ()> {
+    pub(crate) fn socket_recv(&self, id: &Socket, pkt: &mut NetworkPacket, stack: &NetworkStack, p: &SocketRecvParam) -> Result<(), ()> {
         Err(())
     }
-    
-    fn socket_close(&self, id: &Socket) -> Result<(), ()> {
+
+    pub(crate) fn socket_close(&self, id: &Socket, stack: &NetworkStack) -> Result<(), ()> {
         Err(())
     }
 
     // note: called after bidirectionally closed
-    fn socket_destroy(&self, socket: &Socket) -> Result<(), ()> {
-        if let Ok(_) = self.revoke_id(socket.slot) {
+    pub(crate) fn socket_destroy(&self, id: &Socket, stack: &NetworkStack) -> Result<(), ()> {
+        if let Ok(_) = self.revoke_id(id.slot) {
             // TODO: delete sub res
             Ok(())
         } else {
